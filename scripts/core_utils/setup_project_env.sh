@@ -1,108 +1,144 @@
 #!/bin/bash
 
-# Script to set up local Docker client environment to connect to remote Docker Swarm via bastion.
+# ===================================================================
+# Project Environment Setup Script
+# ===================================================================
+# This script should be sourced: source setup_project_env.sh
+# It sets up environment variables, SSH config, SSH agent, and Docker host
+# ===================================================================
 
-set -e
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# Step 0: Initialize
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+echo
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "🔹 Step 0: Initialize"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "Setting up project environment..."
 
-# --- Configuration ---
+# --- Determine absolute paths ---
 SCRIPT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &> /dev/null && pwd)
+PROJECT_ROOT=$(cd "$SCRIPT_DIR/../.." &> /dev/null && pwd)
+TERRAFORM_DIR=$(cd "$PROJECT_ROOT/Iac/TERRAFORM" &> /dev/null && pwd)
 
-TERRAFORM_DIR="${SCRIPT_DIR}/../../Iac/TERRAFORM"
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# Step 1: Export Terraform outputs
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+echo
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "🔹 Step 1: Export Terraform outputs"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+# Fetch single-value outputs
+BASTION_PUBLIC_IP=$(terraform -chdir="$TERRAFORM_DIR" output -raw bastion_public_ip 2>/dev/null || true)
+SSH_KEY_PATH=$(terraform -chdir="$TERRAFORM_DIR" output -raw ssh_key_file_path 2>/dev/null || true)
+MANAGER_PRIVATE_IP=$(terraform -chdir="$TERRAFORM_DIR" output -raw manager_private_ip 2>/dev/null || true)
+
+# Fetch list output (worker IPs) as JSON, then convert to space-separated string
+WORKER_PRIVATE_IPS=$(terraform -chdir="$TERRAFORM_DIR" output -json worker_private_ips 2>/dev/null | jq -r '.[]' | xargs)
+
+if [ -z "$BASTION_PUBLIC_IP" ] || [ -z "$SSH_KEY_PATH" ] || [ -z "$MANAGER_PRIVATE_IP" ] || [ -z "$WORKER_PRIVATE_IPS" ]; then
+    echo "⚠️  Terraform outputs missing. Please run 'terraform apply' first."
+    return 1
+fi
+
+# Expand ~ in SSH key path
+SSH_KEY_PATH=$(eval echo "$SSH_KEY_PATH")
+
+echo "✅ BASTION_PUBLIC_IP=$BASTION_PUBLIC_IP"
+echo "✅ SSH_KEY_PATH=$SSH_KEY_PATH"
+echo "✅ MANAGER_PRIVATE_IP=$MANAGER_PRIVATE_IP"
+echo "✅ WORKER_PRIVATE_IPS=$WORKER_PRIVATE_IPS"
+
+export BASTION_PUBLIC_IP SSH_KEY_PATH MANAGER_PRIVATE_IP WORKER_PRIVATE_IPS
+
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# Step 2: Configure SSH config safely
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+echo
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "🔹 Step 2: Configure SSH config"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
 SSH_CONFIG_FILE="$HOME/.ssh/config"
-# Use absolute path for SSH_KEY_PATH
-SSH_KEY_PATH="$HOME/.aws/key/test_key.pem" # Ensure this matches your actual key path
+SSH_USER="ubuntu"
 
-# --- Fetch IPs from Terraform Output ---
-echo "Exporting Terraform outputs..."
-if [ ! -d "$TERRAFORM_DIR" ]; then
-    echo "Error: Terraform directory not found at ${TERRAFORM_DIR}"
-    exit 1
-fi
+# Ensure SSH config exists
+[ ! -f "$SSH_CONFIG_FILE" ] && touch "$SSH_CONFIG_FILE" && chmod 600 "$SSH_CONFIG_FILE"
 
-# Capture terraform output as JSON
-TERRAFORM_OUTPUT_JSON=$(terraform -chdir="$TERRAFORM_DIR" output -json)
+# Function to add/update a host block
+add_ssh_host() {
+    local host_name="$1"
+    local host_ip="$2"
+    local identity_file="$3"
+    local proxy_jump="$4"
 
-# Parse JSON and export environment variables
-export BASTION_PUBLIC_IP=$(echo "$TERRAFORM_OUTPUT_JSON" | jq -r '.bastion_public_ip.value')
-export MANAGER_PRIVATE_IP=$(echo "$TERRAFORM_OUTPUT_JSON" | jq -r '.manager_private_ip.value')
-export WORKER_PRIVATE_IPS=$(echo "$TERRAFORM_OUTPUT_JSON" | jq -r '.worker_private_ips.value[]' | tr '\n' ' ')
-export SSH_KEY_PATH=$(echo "$TERRAFORM_OUTPUT_JSON" | jq -r '.ssh_key_file_path.value')
+    # Remove existing managed block
+    sed -i "/# Managed by setup_project_env.sh: $host_name/,/^\$/d" "$SSH_CONFIG_FILE"
 
-if [ -z "$BASTION_PUBLIC_IP" ] || [ -z "$MANAGER_PRIVATE_IP" ] || [ -z "$WORKER_PRIVATE_IPS" ] || [ -z "$SSH_KEY_PATH" ]; then
-    echo "❌ ERROR: Required Terraform outputs are missing or empty. Please ensure 'terraform apply' was successful and outputs are defined."
-    exit 1
-fi
-
-echo "✅ SUCCESS: Terraform outputs exported successfully."
-
-# --- SSH Agent ---
-echo "Checking SSH agent and adding key if necessary..."
-
-# Ensure SSH_AUTH_SOCK is set and agent is running
-if [ -z "$SSH_AUTH_SOCK" ] || ! ssh-add -l > /dev/null 2>&1; then
-  echo "SSH agent not running or key not loaded. Starting ssh-agent..."
-  # Start ssh-agent and capture its output to set env vars
-  eval "$(ssh-agent -s)" > /dev/null # Suppress default output
-  if [ -n "$SSH_AUTH_SOCK" ]; then
-    echo "✅ SUCCESS: ssh-agent started."
-  else
-    echo "❌ ERROR: Failed to start ssh-agent. Cannot proceed without agent."
-    exit 1
-  fi
-fi
-
-# Add key to agent if not already added
-if ! ssh-add -l | grep -q "$(basename "$SSH_KEY_PATH")"; then
-  echo "Adding SSH key to agent..."
-  if ssh-add "$SSH_KEY_PATH" 2>/dev/null; then # Suppress "Identity added" output
-    echo "✅ SUCCESS: SSH key added to agent."
-  else
-    echo "❌ ERROR: Failed to add SSH key to agent. Check key path and permissions. Cannot proceed."
-    exit 1 # This must be critical. If key isn't added, SSH will fail.
-  fi
-else
-  echo "✅ SUCCESS: SSH key already in agent."
-fi
-
-echo "SSH key setup complete."
-
-# --- Configure ~/.ssh/config ---
-echo "Configuring ~/.ssh/config for swarm-manager..."
-
-SSH_CONFIG_BLOCK="Host swarm-manager\n    Hostname $MANAGER_PRIVATE_IP\n    User ubuntu\n    IdentityFile $SSH_KEY_PATH\n    ProxyJump ubuntu@$BASTION_PUBLIC_IP"
-
-# Check if ~/.ssh/config exists, create if not
-if [ ! -f "$SSH_CONFIG_FILE" ]; then
-    touch "$SSH_CONFIG_FILE"
-    chmod 600 "$SSH_CONFIG_FILE"
-fi
-
-# Use awk to replace the block if it exists, otherwise append
-awk -v block="$SSH_CONFIG_BLOCK" ' 
-BEGIN { found = 0 }
-/^Host swarm-manager$/ {
-    print block
-    found = 1
-    while (getline && $0 !~ /^$/ && $0 !~ /^Host /) {}
-    if ($0 ~ /^$/) { print "" } 
-    next
+    # Append new block
+    {
+        echo ""
+        echo "# Managed by setup_project_env.sh: $host_name"
+        echo "Host $host_name"
+        echo "    Hostname $host_ip"
+        echo "    User $SSH_USER"
+        echo "    IdentityFile $identity_file"
+        [ -n "$proxy_jump" ] && echo "    ProxyJump $proxy_jump"
+        echo ""
+    } >> "$SSH_CONFIG_FILE"
 }
-{ print }
-END {
-    if (found == 0) {
-        print ""
-        print block
-    }
-}' "$SSH_CONFIG_FILE" > "${SSH_CONFIG_FILE}.tmp" && mv "${SSH_CONFIG_FILE}.tmp" "$SSH_CONFIG_FILE"
 
-echo "Updated 'swarm-manager' entry in $SSH_CONFIG_FILE"
+# Add Bastion host
+add_ssh_host "bastion-host" "$BASTION_PUBLIC_IP" "$SSH_KEY_PATH" ""
 
-# --- Final Instructions ---
-echo ""
-echo "--------------------------------------------------------------------------------"
-echo "IMPORTANT: To use Docker commands locally for the Swarm cluster, run the following command:"
-echo "  export DOCKER_HOST=\"ssh://swarm-manager\""
-echo "You can add this line to your ~/.bashrc or ~/.zshrc for permanent setup."
-echo "--------------------------------------------------------------------------------"
+# Add Manager host behind bastion
+add_ssh_host "swarm-manager" "$MANAGER_PRIVATE_IP" "$SSH_KEY_PATH" "ubuntu@$BASTION_PUBLIC_IP"
 
-echo "You can now run Ansible commands and connection scripts."
+# Add Worker hosts behind bastion
+i=1
+for ip in $WORKER_PRIVATE_IPS; do
+    add_ssh_host "worker$i" "$ip" "$SSH_KEY_PATH" "ubuntu@$BASTION_PUBLIC_IP"
+    ((i++))
+done
+
+echo "✅ SSH config updated with bastion, manager, and worker nodes"
+
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# Step 3: SSH agent check & add key
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+echo
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "🔹 Step 3: SSH agent check & add key"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+if ! ssh-add -l > /dev/null 2>&1; then
+    echo "⚠️ SSH agent not running. Starting ssh-agent..."
+    eval "$(ssh-agent -s)" > /dev/null
+fi
+
+if ! ssh-add -l | grep -q "$(basename "$SSH_KEY_PATH")"; then
+    ssh-add "$SSH_KEY_PATH" > /dev/null 2>&1
+    if [ $? -eq 0 ]; then
+        echo "✅ SSH key added to agent successfully."
+    else
+        echo "⚠️ Failed to add SSH key. Run manually: ssh-add $SSH_KEY_PATH"
+    fi
+else
+    echo "✅ SSH agent is running and keys are loaded."
+fi
+
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# Step 4: Docker host setup
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+echo
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "🔹 Step 4: Docker host setup"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+echo "ℹ️ To use Docker commands locally for the Swarm cluster, run:"
+echo "   export DOCKER_HOST=\"ssh://swarm-manager\""
+
+echo
+echo "🎉 Project environment setup complete. You can now run Ansible commands and connection scripts."
+echo

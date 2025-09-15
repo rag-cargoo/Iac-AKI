@@ -1,7 +1,8 @@
 ---
 - name: 1. Docker 및 필요 라이브러리 설치
-  hosts: all
+  hosts: swarm_nodes  # manager + worker 전체
   become: true
+  gather_facts: true
   tasks:
     - name: 필요한 패키지 설치 (apt-transport-https, curl 등)
       apt:
@@ -47,8 +48,9 @@
         state: present
 
 - name: 2. Docker Swarm 매니저 초기화
-  hosts: manager
+  hosts: swarm_manager
   become: true
+  gather_facts: true
   tasks:
     - name: Swarm 매니저 초기화
       community.docker.docker_swarm:
@@ -62,11 +64,13 @@
       when: swarm_init_result is defined
 
 - name: 3. Docker Swarm 워커 노드 조인
-  hosts: worker
+  hosts: swarm_worker
   become: true
+  gather_facts: true
   tasks:
     - name: 워커 노드를 Swarm 클러스터에 조인
       community.docker.docker_swarm:
         state: join
-        join_token: "{{ hostvars[groups['manager'][0]]['worker_join_token'] }}"
-        remote_addrs: [ "{{ hostvars[groups['manager'][0]]['ansible_host'] }}:2377" ]
+        join_token: "{{ hostvars[groups['swarm_manager'][0]]['worker_join_token'] }}"
+        remote_addrs:
+          - "{{ hostvars[groups['swarm_manager'][0]]['ansible_host'] }}:2377"
