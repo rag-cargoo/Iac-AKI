@@ -1,0 +1,20 @@
+# Terraform
+.terraform/
+*.tfplan
+*.tfstate
+*.tfstate.backup
+.terraform.lock.hcl
+*.tfvars
+terraform.tfvars
+
+# Ansible
+*.retry
+*.vault
+*.pem # Private keys (like test_key.pem)
+.ansible/
+
+# Environment variables / sensitive files
+.env
+*.env
+*.log
+*.tmp
