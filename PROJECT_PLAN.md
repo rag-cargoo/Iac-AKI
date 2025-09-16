@@ -1,48 +1,88 @@
 # 프로젝트: AWS Ansible Docker Swarm
 
 ## 1. 프로젝트 목표
+Terraform을 사용하여 AWS 인프라를 구축하고, Ansible을 사용하여 Docker Swarm 클러스터를 자동 구성 및 배포하는 것을 목표로 합니다.  
+최종적으로 컨테이너화된 애플리케이션을 배포할 수 있는 Swarm 환경을 구축합니다.
 
-이 프로젝트는 Terraform을 사용하여 AWS에 인프라를 구축하고, Ansible을 사용하여 Docker Swarm 클러스터를 자동으로 구성 및 배포하는 것을 목표로 합니다. 최종적으로는 컨테이너화된 애플리케이션을 배포할 수 있는 Docker Swarm 환경을 구축합니다.
+---
 
-## 2. 인프라 구성 (Terraform) - 완료
+## 2. 인프라 구성 (Terraform)
+Terraform을 통해 다음 리소스를 생성했습니다:
 
-Terraform을 통해 다음과 같은 AWS 리소스 생성을 완료했습니다.
+- VPC, Subnet, Gateway 등 네트워크 환경
+- EC2 인스턴스: Bastion, Manager, Worker (동적 확장 가능)
+- 보안 그룹
 
-*   **VPC, Subnet, Gateway 등 네트워크 환경**
-*   **EC2 인스턴스:** Bastion, Manager, Worker (동적 확장 가능)
-*   **보안 그룹**
+Terraform output으로 필요한 정보(호스트 IP, SSH 키 경로 등)를 자동으로 추출하도록 구성했습니다.
 
-## 3. 서버 구성 및 클러스터 구축 (Ansible) - 완료
+---
 
-Ansible을 사용하여 프로비저닝된 EC2 인스턴스의 초기 설정 및 Docker Swarm 클러스터 구성을 완료했습니다.
+## 3. 서버 구성 및 클러스터 구축 (Ansible)
 
-*   **Ansible 설정:** 동적 인벤토리(`scripts/core_utils/dynamic_inventory.py`)를 사용하여 Terraform output에서 호스트 정보를 자동으로 가져오도록 설정.
-*   **Docker 설치:** 모든 노드에 Docker Engine 및 필요 패키지 설치 완료.
-*   **Docker Swarm 클러스터 구성:**
-    *   `manager` 노드를 Swarm 매니저로 초기화 완료.
-    *   `worker` 노드들을 클러스터에 조인 완료.
+### 3.1 환경 변수 및 SSH 설정
+- `scripts/core_utils/setup_project_env.sh` 스크립트에서 Terraform output을 읽어 다음을 자동 설정:
+  - `BASTION_PUBLIC_IP`, `MANAGER_PRIVATE_IP`, `WORKER_PRIVATE_IPS`, `SSH_KEY_PATH` 환경 변수
+  - `~/.ssh/config` 자동 갱신 (Bastion, Manager, Worker 노드)
+  - SSH agent 실행 및 키 추가
+  - `known_hosts` 자동 등록
+- SSH 접속 관련 트러블슈팅:
+  - 매번 새 EC2 인스턴스가 생기면서 host key 충돌 발생 → `ssh-keygen -R <IP>` 자동 실행으로 해결
+  - 핑거프린트 경고는 수동 확인 없이 `ssh-keyscan`으로 known_hosts 업데이트
 
-## 4. 클러스터 기능 테스트 (Nginx 배포) - 완료
+### 3.2 Ansible 인벤토리
+- Ansible은 `dynamic_inventory.py`를 사용하여 Terraform output 기반으로 호스트와 각 노드별 변수를 동적으로 불러옵니다
+  - SSH 접속 정보는 `~/.ssh/config`에서 처리
+  - 플레이북 실행 시 자동으로 최신 호스트 정보 반영
+- ansible.cfg 설정:
+  - `inventory = ../../scripts/core_utils/dynamic_inventory.py`
+  - `host_key_checking = False`
+  - `remote_user = ubuntu`
+  - `collections_paths = /home/aki/.ansible/collections`
+  - `[inventory] enable_plugins = script`
 
-클러스터가 정상적으로 동작하는지 확인하기 위해 Nginx 서비스를 배포하여 기능 테스트를 완료했습니다. 테스트용 `deploy_nginx.yml` 플레이북은 현재 `Iac/ANSIBLE/test_playbooks` 디렉토리에 있습니다.
+### 3.3 Docker 설치 및 Swarm 구성
+- 모든 노드에 Docker Engine 설치
+- Manager 노드 초기화 후 Worker 노드 조인
+- 테스트용 Nginx 배포로 클러스터 동작 확인
 
-*   **Playbook:** `deploy_nginx.yml` (테스트용, `Iac/ANSIBLE/test_playbooks`에 위치)
-*   **배포:** `nginx_web` 서비스를 3개의 복제본으로 배포하여 클러스터 기능 확인 완료.
-*   **결과:** 매니저 노드와 워커 노드에 Nginx 컨테이너가 분산 배포되어 실행되는 것을 `docker service ps` 명령으로 확인 완료.
+---
 
-## 5. 다음 단계 (제안)
+## 4. 프로젝트 구조 (중요 스크립트)
+- `setup_project_env.sh`: 환경 변수, SSH 설정, SSH agent, known_hosts 초기화
+- `dynamic_inventory.py`: Ansible 인벤토리 제공 (필수)
+- Makefile: `make run`으로 환경 초기화 + Ansible 플레이북 실행 자동화
+- 삭제 가능/중복 스크립트:
+  - `connect_manager.sh`, `run_env.sh` 등 (SSH 접속은 `ssh swarm-manager` 또는 Ansible에서 자동 처리 가능)
 
-*   **모니터링 스택 구축:** `worker2` (이전 `private_monitoring`) 인스턴스에 Prometheus, Grafana 등을 설치하여 클러스터 및 컨테이너 모니터링 환경 구축.
-*   **고가용성(HA) 구성:** Swarm 매니저 노드를 추가하여 매니저 이중화 구성.
-*   **CI/CD 연동:** GitHub Actions 등과 연동하여 애플리케이션 자동 배포 파이프라인 구축.
+---
 
-## 6. 트러블슈팅 및 해결 과정 기록
+## 5. 트러블슈팅 및 해결 과정
+1. SSH 접속 문제
+   - 원인: 매번 새 EC2 인스턴스 생성 → known_hosts 충돌
+   - 해결: `setup_project_env.sh`에서 기존 host key 자동 삭제 및 ssh-keyscan 등록
+2. Ansible 인벤토리
+   - 문제: 호스트 목록과 각 노드 변수 필요
+   - 해결: `dynamic_inventory.py` 사용 → Terraform output 기반 동적 인벤토리 제공
+3. Docker Swarm 초기화
+   - Manager/Worker 조인 자동화
+   - 환경 변수와 SSH config를 통해 Ansible이 원활히 접근 가능
 
-*   **환경 설정 자동화:** `scripts/core_utils/setup_project_env.sh` 스크립트를 통해 Terraform output 환경 변수 내보내기를 자동화.
-*   **SSH 접속 문제:** `ssh-agent` 설정 및 `~/.ssh/config` 파일, 키 권한 문제 등을 통해 해결. `scripts/connect_manager.sh` 스크립트를 통해 접속 자동화. (환경 변수는 `scripts/core_utils/setup_project_env.sh`에서 로드)
-*   **Ansible 모듈 인식 문제:** `community.docker` 컬렉션 경로를 Ansible이 인식하지 못하는 문제가 발생. `ansible.cfg`에 `collections_paths`를 명시적으로 지정했으나 해결되지 않아, `shell` 모듈로 `docker service create` 명령어를 직접 실행하는 방식으로 우회하여 해결.
-*   **Terraform "undeclared resource" 오류:** `ec2.tf` 파일의 내용 불일치로 인해 발생. `ec2_verified.tf` 파일을 통해 `ec2.tf`를 최신화하여 해결.
-*   **Terraform `cidrcontains` / `cidrnetmask` 함수 오류:** `ec2.tf`에서 워커 인스턴스의 서브넷 할당 로직 문제. `startswith` 함수를 사용하여 IP 주소 기반으로 서브넷을 동적으로 할당하도록 수정하여 해결.
-*   **Terraform 변수 관리 개선:** `variables.tf`에서 `default` 값 제거 및 `terraform.tfvars`를 통한 변수 관리 도입. `Iac/TERRAFORM/TFVARS_GUIDE.md` 문서 추가.
-*   **Terraform 리소스 명칭 통일:** `private_app_a` -> `manager`, `private_app_b` -> `worker1`, `private_monitoring` -> `worker2`로 리소스 이름 및 관련 태그, output 이름 통일.
-*   **Ansible SSH 키 경로 관리:** 스크립트에서 SSH 키 경로를 하드코딩하는 대신 Terraform output에서 가져오도록 변경.
+---
+
+## 6. 테스트 및 검증
+- Nginx 서비스 3개 복제본 배포
+- `docker service ps nginx_web` 명령으로 Manager 및 Worker에 컨테이너 정상 배포 확인
+
+---
+
+## 7. 향후 계획
+- 모니터링 스택 설치 (Prometheus, Grafana)
+- Swarm Manager HA 구성
+- CI/CD 파이프라인 연동
+
+---
+
+💡 핵심 요약
+- `dynamic_inventory.py`는 필수 → Ansible 인벤토리 역할
+- SSH 설정/초기화, host key 충돌, 핑거프린트 관련 트러블슈팅 내용 포함
+- 불필요한 중복 스크립트는 제거 가능, Makefile과 `setup_project_env.sh` 중심으로 환경 구성

@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-
 import json
 import os
 import sys
@@ -11,19 +10,13 @@ def generate_ansible_inventory():
     ssh_key_file = os.environ.get("SSH_KEY_PATH")
 
     if not bastion_public_ip or not manager_private_ip or not worker_private_ips_str or not ssh_key_file:
-        print("Error: Required environment variables (BASTION_PUBLIC_IP, MANAGER_PRIVATE_IP, WORKER_PRIVATE_IPS, SSH_KEY_PATH) are not set.", file=sys.stderr)
+        print("Error: Required environment variables are not set.", file=sys.stderr)
         sys.exit(1)
 
     worker_private_ips = worker_private_ips_str.strip().split()
-
     inventory = {"_meta": {"hostvars": {}}, "all": {"children": []}}
 
-    # ProxyCommand 대신 ProxyJump 사용
-    common_ssh_args = (
-        f"-o StrictHostKeyChecking=no "
-        f"-o ForwardAgent=yes "
-        f"-o ProxyJump=ubuntu@{bastion_public_ip} -i {ssh_key_file}"
-    )
+    common_ssh_args = f"-o StrictHostKeyChecking=no -o ForwardAgent=yes -o ProxyJump=ubuntu@{bastion_public_ip} -i {ssh_key_file}"
 
     # Bastion
     inventory["bastion"] = {"hosts": ["bastion-host"]}
@@ -63,7 +56,6 @@ def generate_ansible_inventory():
     inventory["all"]["children"].append("swarm_nodes")
 
     print(json.dumps(inventory, indent=4))
-
 
 if __name__ == "__main__":
     generate_ansible_inventory()
