@@ -1,3 +1,6 @@
+SHELL := /bin/bash
+
+
 .DEFAULT_GOAL := run
 
 SETUP_SCRIPT=./scripts/core_utils/setup_project_env.sh

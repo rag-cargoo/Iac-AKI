@@ -1,0 +1,7 @@
+---
+- name: Test SSH connectivity
+  hosts: swarm_nodes
+  gather_facts: false
+  tasks:
+    - name: Check uptime
+      ansible.builtin.command: uptime

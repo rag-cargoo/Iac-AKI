@@ -7,9 +7,6 @@
 # It sets up environment variables, SSH config, SSH agent, and Docker host
 # ===================================================================
 
-# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-# Step 0: Initialize
-# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 echo
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo "🔹 Step 0: Initialize"
@@ -21,9 +18,6 @@ SCRIPT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &> /dev/null && pwd)
 PROJECT_ROOT=$(cd "$SCRIPT_DIR/../.." &> /dev/null && pwd)
 TERRAFORM_DIR=$(cd "$PROJECT_ROOT/Iac/TERRAFORM" &> /dev/null && pwd)
 
-# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-# Step 1: Export Terraform outputs
-# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 echo
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo "🔹 Step 1: Export Terraform outputs"
@@ -34,7 +28,7 @@ BASTION_PUBLIC_IP=$(terraform -chdir="$TERRAFORM_DIR" output -raw bastion_public
 SSH_KEY_PATH=$(terraform -chdir="$TERRAFORM_DIR" output -raw ssh_key_file_path 2>/dev/null || true)
 MANAGER_PRIVATE_IP=$(terraform -chdir="$TERRAFORM_DIR" output -raw manager_private_ip 2>/dev/null || true)
 
-# Fetch list output (worker IPs) as JSON, then convert to space-separated string
+# Fetch list output (worker IPs)
 WORKER_PRIVATE_IPS=$(terraform -chdir="$TERRAFORM_DIR" output -json worker_private_ips 2>/dev/null | jq -r '.[]' | xargs)
 
 if [ -z "$BASTION_PUBLIC_IP" ] || [ -z "$SSH_KEY_PATH" ] || [ -z "$MANAGER_PRIVATE_IP" ] || [ -z "$WORKER_PRIVATE_IPS" ]; then
@@ -53,20 +47,31 @@ echo "✅ WORKER_PRIVATE_IPS=$WORKER_PRIVATE_IPS"
 export BASTION_PUBLIC_IP SSH_KEY_PATH MANAGER_PRIVATE_IP WORKER_PRIVATE_IPS
 
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-# Step 2: Configure SSH config safely
+# Step 1.5: Cleanup old SSH host keys (to avoid fingerprint conflicts)
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 echo
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "🔹 Step 1.5: Cleanup old SSH host keys"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+ssh-keygen -R "$BASTION_PUBLIC_IP" 2>/dev/null
+ssh-keygen -R "$MANAGER_PRIVATE_IP" 2>/dev/null
+for ip in $WORKER_PRIVATE_IPS; do
+    ssh-keygen -R "$ip" 2>/dev/null
+done
+
+echo "✅ Old SSH host keys removed from known_hosts"
+
+echo
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo "🔹 Step 2: Configure SSH config"
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
 SSH_CONFIG_FILE="$HOME/.ssh/config"
 SSH_USER="ubuntu"
 
-# Ensure SSH config exists
 [ ! -f "$SSH_CONFIG_FILE" ] && touch "$SSH_CONFIG_FILE" && chmod 600 "$SSH_CONFIG_FILE"
 
-# Function to add/update a host block
 add_ssh_host() {
     local host_name="$1"
     local host_ip="$2"
@@ -89,13 +94,13 @@ add_ssh_host() {
     } >> "$SSH_CONFIG_FILE"
 }
 
-# Add Bastion host
+# Bastion host
 add_ssh_host "bastion-host" "$BASTION_PUBLIC_IP" "$SSH_KEY_PATH" ""
 
-# Add Manager host behind bastion
+# Manager node
 add_ssh_host "swarm-manager" "$MANAGER_PRIVATE_IP" "$SSH_KEY_PATH" "ubuntu@$BASTION_PUBLIC_IP"
 
-# Add Worker hosts behind bastion
+# Worker nodes
 i=1
 for ip in $WORKER_PRIVATE_IPS; do
     add_ssh_host "worker$i" "$ip" "$SSH_KEY_PATH" "ubuntu@$BASTION_PUBLIC_IP"
@@ -105,8 +110,21 @@ done
 echo "✅ SSH config updated with bastion, manager, and worker nodes"
 
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-# Step 3: SSH agent check & add key
+# Step 2.5: Register hosts in known_hosts
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+echo
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "🔹 Step 2.5: Register SSH known_hosts"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+ssh-keyscan -H "$BASTION_PUBLIC_IP" >> ~/.ssh/known_hosts 2>/dev/null
+ssh-keyscan -H "$MANAGER_PRIVATE_IP" >> ~/.ssh/known_hosts 2>/dev/null
+for ip in $WORKER_PRIVATE_IPS; do
+    ssh-keyscan -H "$ip" >> ~/.ssh/known_hosts 2>/dev/null
+done
+
+echo "✅ Hosts added to known_hosts to avoid authenticity prompt"
+
 echo
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo "🔹 Step 3: SSH agent check & add key"
@@ -128,9 +146,6 @@ else
     echo "✅ SSH agent is running and keys are loaded."
 fi
 
-# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-# Step 4: Docker host setup
-# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 echo
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo "🔹 Step 4: Docker host setup"
@@ -141,4 +156,3 @@ echo "   export DOCKER_HOST=\"ssh://swarm-manager\""
 
 echo
 echo "🎉 Project environment setup complete. You can now run Ansible commands and connection scripts."
-echo
