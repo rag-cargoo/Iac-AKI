@@ -3,9 +3,10 @@ SHELL := /bin/bash
 
 .DEFAULT_GOAL := run
 
-SETUP_SCRIPT=./scripts/core_utils/setup_project_env.sh
-ANSIBLE_PLAYBOOK=Iac/ANSIBLE/playbook.yml
-DYNAMIC_INVENTORY=./scripts/core_utils/dynamic_inventory.py
+SETUP_SCRIPT=./scripts/bin/setup_project_env.sh
+ANSIBLE_PLAYBOOK=Iac/ANSIBLE/playbooks/cluster.yml
+INVENTORY_FILE=Iac/ANSIBLE/inventory/production/swarm.yml
+ANSIBLE_CFG=Iac/ANSIBLE/ansible.cfg
 
 .PHONY: run setup_env ansible clean
 
@@ -14,7 +15,7 @@ run:
 	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 	@echo "🔹 Running project environment setup + Ansible..."
 	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-	@bash -c "source $(SETUP_SCRIPT) && ansible-playbook $(ANSIBLE_PLAYBOOK) -i $(DYNAMIC_INVENTORY)"
+	@ANSIBLE_CONFIG=$(ANSIBLE_CFG) bash -c "source $(SETUP_SCRIPT) && ansible-playbook $(ANSIBLE_PLAYBOOK) -i $(INVENTORY_FILE)"
 
 # Setup environment only
 setup_env:
@@ -28,7 +29,7 @@ ansible:
 	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 	@echo "🔹 Running Ansible playbook..."
 	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-	@bash -c "source $(SETUP_SCRIPT) && ansible-playbook $(ANSIBLE_PLAYBOOK) -i $(DYNAMIC_INVENTORY)"
+	@ANSIBLE_CONFIG=$(ANSIBLE_CFG) bash -c "source $(SETUP_SCRIPT) && ansible-playbook $(ANSIBLE_PLAYBOOK) -i $(INVENTORY_FILE)"
 
 # Clean
 clean:

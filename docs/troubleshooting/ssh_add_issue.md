@@ -2,7 +2,7 @@
 
 ## 문제 증상
 
-`scripts/core_utils/setup_project_env.sh` 또는 이 스크립트를 소싱하는 다른 연결 스크립트(예: `connect_manager.sh`, `connect_service_tunnel.sh`)를 실행할 때, `ssh-agent`는 성공적으로 시작되지만 `ssh-add` 명령에서 다음 오류와 함께 실패함:
+`scripts/bin/setup_project_env.sh` 또는 이 스크립트를 소싱하는 다른 연결 스크립트(예: `scripts/bin/connect_service_tunnel.sh`)를 실행할 때, `ssh-agent`는 성공적으로 시작되지만 `ssh-add` 명령에서 다음 오류와 함께 실패함:
 
 ```
 ❌ ERROR: Failed to add SSH key to agent. Check key path and permissions. Cannot proceed.
@@ -45,7 +45,7 @@
 
 ## 현재 상태 및 해결 방법
 
-`scripts/core_utils/setup_project_env.sh` 스크립트와 `Makefile`의 개선을 통해 `ssh-agent` 시작 및 SSH 키 추가 과정이 더욱 견고해졌습니다.
+`scripts/bin/setup_project_env.sh` 스크립트와 `Makefile`의 개선을 통해 `ssh-agent` 시작 및 SSH 키 추가 과정이 더욱 견고해졌습니다.
 
 `Makefile`의 `run` 타겟을 실행하면 `setup_project_env.sh`가 자동으로 소싱되어 필요한 환경 변수 설정, `~/.ssh/config` 업데이트, 그리고 `ssh-agent` 시작 및 SSH 키 추가를 시도합니다.
 

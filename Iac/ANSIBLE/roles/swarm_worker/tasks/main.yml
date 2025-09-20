@@ -1,0 +1,10 @@
+---
+- name: Join worker node to the Swarm cluster
+  community.docker.docker_swarm:
+    state: join
+    join_token: "{{ hostvars[groups['swarm_manager'][0]].swarm_worker_join_token }}"
+    remote_addrs:
+      - "{{ hostvars[groups['swarm_manager'][0]].ansible_host }}:{{ swarm_manager_rpc_port }}"
+  when:
+    - groups['swarm_manager'] | default([]) | length > 0
+    - hostvars[groups['swarm_manager'][0]].swarm_worker_join_token is defined

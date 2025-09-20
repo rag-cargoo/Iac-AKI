@@ -1,0 +1,22 @@
+---
+- name: Verify Swarm connectivity and service replicas
+  hosts: swarm_manager
+  become: true
+  tasks:
+    - name: List swarm nodes
+      community.docker.docker_node_info:
+        name: all
+      register: swarm_nodes
+
+    - name: Show current swarm nodes
+      ansible.builtin.debug:
+        var: swarm_nodes.nodes
+
+    - name: Inspect published services
+      ansible.builtin.command: docker service ls
+      register: service_list
+      changed_when: false
+
+    - name: Display service list output
+      ansible.builtin.debug:
+        var: service_list.stdout_lines

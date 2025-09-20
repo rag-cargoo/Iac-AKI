@@ -10,6 +10,8 @@
 *   **Container Orchestration:** Docker Swarm
 *   **Cloud Provider:** AWS
 
+> 기여자 안내: 워크플로, 테스트, 보안 수칙은 [Repository Guidelines](AGENTS.md) 문서를 참고하세요.
+
 ## 2. 사전 준비 사항
 
 프로젝트를 실행하기 위해 다음 도구들이 필요합니다.
@@ -23,34 +25,39 @@
 
 ### 3.1. 인프라 구축 (Terraform)
 
-`Iac/TERRAFORM` 디렉토리에서 Terraform을 실행하여 AWS 인프라를 생성합니다. **변수 정의를 위해 `terraform.tfvars` 파일을 사용해야 합니다.** 자세한 내용은 `Iac/TERRAFORM/TFVARS_GUIDE.md`를 참조하십시오.
+`Iac/TERRAFORM/envs/production` 디렉토리에서 Terraform을 실행하여 AWS 인프라를 생성합니다. **변수 정의는 동일 디렉터리의 `terraform.tfvars`에서 관리합니다.** 자세한 내용은 `Iac/TERRAFORM/TFVARS_GUIDE.md`를 참조하십시오.
 
 1.  Terraform 초기화 및 프로바이더 다운로드:
     ```bash
-    cd Iac/TERRAFORM
+    cd Iac/TERRAFORM/envs/production
     terraform init -reconfigure
     ```
-2.  인프라 프로비저닝:
+2.  인프라 플랜 확인:
+    ```bash
+    terraform plan
+    ```
+3.  인프라 프로비저닝:
     ```bash
     terraform apply -auto-approve
     ```
 
 ### 3.2. 서버 구성 및 배포 (Ansible)
 
-Ansible은 Terraform output을 기반으로 동적 인벤토리(`scripts/core_utils/dynamic_inventory.py`)를 사용합니다. `ansible.cfg` 파일은 이 동적 인벤토리를 가리키도록 설정되어 있습니다.
+Ansible은 Terraform output을 기반으로 동적 인벤토리(`inventory/production/swarm.yml` → `inventory_plugins/swarm.py`)를 사용합니다. `ansible.cfg` 파일이 해당 인벤토리를 참조하도록 설정되어 있습니다.
 
 1.  Docker 설치 및 Swarm 클러스터 구성:
     ```bash
     cd Iac/ANSIBLE
     ansible-playbook \
-        -i ../../scripts/core_utils/dynamic_inventory.py \
-        join_workers_direct.yml \
-        --private-key="${SSH_KEY_PATH}"
+        -i inventory/production/swarm.yml \
+        playbooks/cluster.yml
     ```
 2.  Nginx 테스트 서비스 배포 (선택 사항):
     ```bash
     cd Iac/ANSIBLE
-    ansible-playbook test_playbooks/deploy_nginx.yml
+    ansible-playbook \
+        -i inventory/production/swarm.yml \
+        roles/swarm_manager/tests/deploy_nginx.yml
     ```
 
 ### 3.3. 서비스 확인
@@ -67,11 +74,11 @@ docker service ps nginx_web
 
 ## 4. EC2 인스턴스 접속 방법
 
-접속 스크립트들은 `scripts/core_utils/setup_project_env.sh` 스크립트를 통해 필요한 환경 변수(IP 주소, SSH 키 경로 등)를 로드합니다.
+접속 및 배포 스크립트는 `scripts/bin/setup_project_env.sh` 스크립트를 통해 필요한 환경 변수(IP 주소, SSH 키 경로 등)를 로드합니다.
 
 1.  환경 변수 로드:
     ```bash
-    source scripts/core_utils/setup_project_env.sh
+    source scripts/bin/setup_project_env.sh
     ```
     **참고:** 이 스크립트를 실행하면 로컬에서 Docker Swarm 명령어를 직접 사용할 수 있도록 `export DOCKER_HOST="ssh://swarm-manager"` 명령어가 출력됩니다. 이 명령어는 현재 터미널 세션에서 Docker CLI가 원격 Swarm 클러스터와 통신하도록 설정하는 역할을 합니다. 전체 프로젝트 진행에 필수는 아니지만, 로컬에서 `docker node ls`와 같은 명령어를 사용하려면 이 명령어를 직접 실행해야 합니다.
 
@@ -86,17 +93,13 @@ ssh-add "${SSH_KEY_PATH}" # SSH_KEY_PATH는 환경 변수로 설정된 SSH 키 �
 
 `ssh-add` 명령 실행 시 `Identity added:` 메시지가 나타나면 성공적으로 키가 추가된 것입니다.
 
-2.  Bastion Host 접속:
+2.  Swarm Manager 노드 직접 접속 (추천):
     ```bash
-    ./scripts/connect_bastion.sh
+    ssh swarm-manager
     ```
-3.  Swarm Manager 노드 직접 접속 (추천):
+3.  범용 SSH 터널링 스크립트 사용:
     ```bash
-    ./scripts/connect_manager.sh
-    ```
-4.  범용 SSH 터널링 스크립트 사용:
-    ```bash
-    ./scripts/connect_service_tunnel.sh
+    ./scripts/bin/connect_service_tunnel.sh
     ```
     (실행 후 프롬프트에 따라 IP 및 포트 입력)
 

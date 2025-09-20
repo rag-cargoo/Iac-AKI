@@ -1,0 +1,19 @@
+---
+- name: Prepare Docker runtime on all swarm nodes
+  hosts: swarm_nodes
+  become: true
+  roles:
+    - docker_engine
+
+- name: Initialize Swarm manager and publish join token
+  hosts: swarm_manager
+  become: true
+  roles:
+    - swarm_manager
+
+- name: Join worker nodes to the Swarm
+  hosts: swarm_worker
+  become: true
+  roles:
+    - swarm_worker
+  when: groups.get('swarm_worker') | default([]) | length > 0

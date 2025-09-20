@@ -1,0 +1,12 @@
+---
+- name: Deploy Nginx service for verification
+  hosts: swarm_manager
+  become: true
+  tasks:
+    - name: Ensure nginx_web service is present
+      ansible.builtin.shell: >-
+        docker service inspect nginx_web >/dev/null 2>&1 &&
+        docker service update --image nginx:latest --replicas 3 nginx_web ||
+        docker service create --name nginx_web --replicas 3 --publish mode=ingress,published=80,target=80 nginx:latest
+      register: nginx_service
+      changed_when: "'overall progress' in nginx_service.stdout"
