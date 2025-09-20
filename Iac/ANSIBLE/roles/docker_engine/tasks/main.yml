@@ -27,6 +27,11 @@
     groups: docker
     append: yes
 
+- name: Ensure python3-pip is present
+  ansible.builtin.apt:
+    name: python3-pip
+    state: present
+
 - name: Install Docker Python SDK
   ansible.builtin.pip:
     name: "{{ docker_engine_python_packages }}"

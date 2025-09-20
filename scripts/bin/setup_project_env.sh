@@ -93,7 +93,11 @@ if [ $status -ne 0 ]; then
     return 1
 fi
 
-IFS=$'\n' read -r BASTION_PUBLIC_IP SSH_KEY_PATH MANAGER_PRIVATE_IP WORKER_PRIVATE_IPS <<< "$terraform_values"
+mapfile -t _tf_lines <<< "$terraform_values"
+BASTION_PUBLIC_IP=${_tf_lines[0]:-}
+SSH_KEY_PATH=${_tf_lines[1]:-}
+MANAGER_PRIVATE_IP=${_tf_lines[2]:-}
+WORKER_PRIVATE_IPS=${_tf_lines[3]:-}
 
 if [ -z "$BASTION_PUBLIC_IP" ] || [ -z "$SSH_KEY_PATH" ] || [ -z "$MANAGER_PRIVATE_IP" ]; then
     echo "⚠️  Terraform outputs incomplete. Please run 'terraform apply' first."

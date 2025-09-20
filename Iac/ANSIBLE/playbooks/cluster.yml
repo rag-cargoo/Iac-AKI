@@ -16,4 +16,4 @@
   become: true
   roles:
     - swarm_worker
-  when: groups.get('swarm_worker') | default([]) | length > 0
+

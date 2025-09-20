@@ -1,3 +1,0 @@
----
-plugin: script
-script: ../inventory_plugins/swarm.py
