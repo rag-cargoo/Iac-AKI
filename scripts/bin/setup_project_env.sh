@@ -11,12 +11,13 @@ echo
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo "🔹 Step 0: Initialize"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "Setting up project environment (Terraform env: $TERRAFORM_ENVIRONMENT)..."
 
 # --- Determine absolute paths ---
 SCRIPT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &> /dev/null && pwd)
 PROJECT_ROOT=$(cd "$SCRIPT_DIR/../.." &> /dev/null && pwd)
 TERRAFORM_ENVIRONMENT=${TERRAFORM_ENVIRONMENT:-production}
+
+echo "Setting up project environment (Terraform env: $TERRAFORM_ENVIRONMENT)..."
 TERRAFORM_DIR=$(cd "$PROJECT_ROOT/Iac/TERRAFORM/envs/$TERRAFORM_ENVIRONMENT" &> /dev/null && pwd)
 
 if [ -z "$TERRAFORM_DIR" ] || [ ! -d "$TERRAFORM_DIR" ]; then
@@ -34,7 +35,7 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━�
 echo "🔹 Step 1: Export Terraform outputs"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
-terraform_values=$(python3 <<'PY' "$TERRAFORM_DIR")
+terraform_values=$(python3 - "$TERRAFORM_DIR" <<'PY'
 import json
 import subprocess
 import sys
