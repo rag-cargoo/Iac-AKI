@@ -14,13 +14,6 @@ data "aws_ami" "ubuntu" {
   owners = ["099720109477"]
 }
 
-locals {
-  worker_subnet_assignment = {
-    (var.private_subnet_a_cidr) = var.private_subnet_a_id,
-    (var.private_subnet_b_cidr) = var.private_subnet_b_id
-  }
-}
-
 resource "aws_instance" "bastion" {
   ami                    = data.aws_ami.ubuntu.id
   instance_type          = var.instance_type
@@ -34,36 +27,30 @@ resource "aws_instance" "bastion" {
 }
 
 resource "aws_instance" "manager" {
+  for_each               = { for mgr in var.managers : mgr.name => mgr }
   ami                    = data.aws_ami.ubuntu.id
   instance_type          = var.instance_type
-  subnet_id              = var.private_subnet_a_id
-  private_ip             = var.manager_ip
-  key_name               = var.ssh_key_name
-  vpc_security_group_ids = [var.security_group_id]
-
-  tags = {
-    Name = upper("${var.project_name}-MANAGER-SERVER")
-  }
-}
-
-resource "aws_instance" "worker" {
-  for_each               = var.worker_nodes
-  ami                    = data.aws_ami.ubuntu.id
-  instance_type          = var.instance_type
-  subnet_id              = lookup(local.worker_subnet_assignment, each.value.subnet_cidr, null)
-  private_ip             = each.value.ip
+  subnet_id              = var.private_subnet_map[each.value.subnet_name]
+  private_ip             = each.value.private_ip
   key_name               = var.ssh_key_name
   vpc_security_group_ids = [var.security_group_id]
 
   tags = {
     Name = upper("${var.project_name}-${upper(each.key)}")
   }
+}
 
-  lifecycle {
-    precondition {
-      condition     = lookup(local.worker_subnet_assignment, each.value.subnet_cidr, null) != null
-      error_message = "Worker \"${each.key}\" references unsupported subnet CIDR ${each.value.subnet_cidr}."
-    }
+resource "aws_instance" "worker" {
+  for_each               = { for wk in var.workers : wk.name => wk }
+  ami                    = data.aws_ami.ubuntu.id
+  instance_type          = var.instance_type
+  subnet_id              = var.private_subnet_map[each.value.subnet_name]
+  private_ip             = each.value.private_ip
+  key_name               = var.ssh_key_name
+  vpc_security_group_ids = [var.security_group_id]
+
+  tags = {
+    Name = upper("${var.project_name}-${upper(each.key)}")
   }
 }
 

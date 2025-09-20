@@ -28,10 +28,13 @@ ssh_key_name = "your_ssh_key_name" # 예: "my-ssh-key"
 ssh_key_file_path = "your_ssh_key_file_path" # 예: "~/.aws/key/my-ssh-key.pem"
 my_ip = "your_public_ip/32" # 중요: SSH 접속을 허용할 본인의 공용 IP 주소로 변경하십시오. 예: "203.0.113.45/32"
 manager_ip = "your_manager_private_ip" # 예: "10.0.101.10"
-worker_nodes = {
-  "worker1" = { ip = "your_worker1_private_ip", subnet_cidr = "your_worker1_subnet_cidr" }, # 예: "10.0.102.10", "10.0.102.0/24"
-  "worker2" = { ip = "your_worker2_private_ip", subnet_cidr = "your_worker2_subnet_cidr" }  # 예: "10.0.101.11", "10.0.101.0/24"
-}
+managers = [
+  { name = "manager-1", private_ip = "your_manager_private_ip", subnet_name = "your_manager_subnet_alias" }
+]
+
+workers = [
+  { name = "worker-1", private_ip = "your_worker_private_ip", subnet_name = "your_worker_subnet_alias" }
+]
 ```
 
 ## `terraform.tfvars` 예시

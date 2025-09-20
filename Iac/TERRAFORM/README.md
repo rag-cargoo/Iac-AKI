@@ -8,7 +8,7 @@
 3. `terraform init`, `terraform plan`, `terraform apply` 순으로 실행합니다.
 
 ## 디렉터리 구성
-- `modules/` – VPC 네트워크, 보안 그룹, 컴퓨트 리소스 모듈
+- `modules/` – 보안 그룹, 컴퓨트 등 사내용 모듈(네트워크는 `terraform-aws-modules/vpc/aws` 사용)
 - `envs/<env>/` – 모듈을 조합하는 환경별 설정과 백엔드 정의
 - `state/<env>/` – 로컬 상태 파일 기본 위치(실무에서는 S3/DynamoDB 등 원격 백엔드를 권장)
 

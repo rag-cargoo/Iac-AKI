@@ -1,6 +1,6 @@
 # Production Environment
 
-Entry point for provisioning the production Docker Swarm infrastructure. This layer wires together the reusable modules under `../../modules`.
+Entry point for provisioning the production Docker Swarm infrastructure. This layer consumes the upstream `terraform-aws-modules/vpc/aws` module alongside local security/compute modules under `../../modules`.
 
 ## Usage
 ```bash

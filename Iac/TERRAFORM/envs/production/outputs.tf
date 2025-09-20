@@ -3,9 +3,9 @@ output "bastion_public_ip" {
   value       = module.compute.bastion_public_ip
 }
 
-output "manager_private_ip" {
-  description = "Private IP address of the Swarm manager."
-  value       = module.compute.manager_private_ip
+output "manager_private_ips" {
+  description = "Private IP addresses of the Swarm managers."
+  value       = module.compute.manager_private_ips
 }
 
 output "worker_private_ips" {
@@ -20,20 +20,20 @@ output "ssh_key_file_path" {
 
 output "private_subnet_a_id" {
   description = "ID of private subnet A."
-  value       = module.network.private_subnet_a_id
+  value       = module.vpc.private_subnets[0]
 }
 
 output "private_subnet_a_cidr_block" {
   description = "CIDR block of private subnet A."
-  value       = module.network.private_subnet_a_cidr_block
+  value       = module.vpc.private_subnets_cidr_blocks[0]
 }
 
 output "private_subnet_b_id" {
   description = "ID of private subnet B."
-  value       = module.network.private_subnet_b_id
+  value       = module.vpc.private_subnets[1]
 }
 
 output "private_subnet_b_cidr_block" {
   description = "CIDR block of private subnet B."
-  value       = module.network.private_subnet_b_cidr_block
+  value       = module.vpc.private_subnets_cidr_blocks[1]
 }

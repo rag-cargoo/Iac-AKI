@@ -3,9 +3,9 @@ output "bastion_public_ip" {
   value       = aws_eip.bastion.public_ip
 }
 
-output "manager_private_ip" {
-  description = "Private IP address of the Swarm manager."
-  value       = aws_instance.manager.private_ip
+output "manager_private_ips" {
+  description = "Private IP addresses of the Swarm managers."
+  value       = [for manager in aws_instance.manager : manager.private_ip]
 }
 
 output "worker_private_ips" {

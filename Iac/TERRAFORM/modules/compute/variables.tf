@@ -23,24 +23,9 @@ variable "public_subnet_id" {
   type        = string
 }
 
-variable "private_subnet_a_id" {
-  description = "Subnet ID for the primary private subnet."
-  type        = string
-}
-
-variable "private_subnet_b_id" {
-  description = "Subnet ID for the secondary private subnet."
-  type        = string
-}
-
-variable "private_subnet_a_cidr" {
-  description = "CIDR block for the primary private subnet."
-  type        = string
-}
-
-variable "private_subnet_b_cidr" {
-  description = "CIDR block for the secondary private subnet."
-  type        = string
+variable "private_subnet_map" {
+  description = "Mapping of subnet aliases to subnet IDs."
+  type        = map(string)
 }
 
 variable "security_group_id" {
@@ -48,23 +33,20 @@ variable "security_group_id" {
   type        = string
 }
 
-variable "manager_ip" {
-  description = "Fixed private IP for the Swarm manager."
-  type        = string
+variable "managers" {
+  description = "Swarm managers to create."
+  type = list(object({
+    name        = string
+    private_ip  = string
+    subnet_name = string
+  }))
 }
 
-variable "worker_nodes" {
-  description = "Map of worker node definitions keyed by name."
-  type = map(object({
-    ip          = string,
-    subnet_cidr = string
+variable "workers" {
+  description = "Swarm workers to create."
+  type = list(object({
+    name        = string
+    private_ip  = string
+    subnet_name = string
   }))
-
-  validation {
-    condition = alltrue([
-      for worker in values(var.worker_nodes) :
-      can(regex("\\d+\\.\\d+\\.\\d+\\.\\d+/\\d+", worker.subnet_cidr))
-    ])
-    error_message = "Each worker must specify subnet_cidr in CIDR notation."
-  }
 }

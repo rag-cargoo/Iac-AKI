@@ -63,15 +63,20 @@ variable "my_ip" {
   type        = string
 }
 
-variable "manager_ip" {
-  description = "Static private IP for the Swarm manager instance."
-  type        = string
+variable "managers" {
+  description = "Swarm manager instances to create."
+  type = list(object({
+    name        = string
+    private_ip  = string
+    subnet_name = string
+  }))
 }
 
-variable "worker_nodes" {
-  description = "Map of worker node definitions keyed by friendly name."
-  type = map(object({
-    ip          = string,
-    subnet_cidr = string
+variable "workers" {
+  description = "Swarm worker instances to create."
+  type = list(object({
+    name        = string
+    private_ip  = string
+    subnet_name = string
   }))
 }
