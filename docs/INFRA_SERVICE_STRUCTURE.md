@@ -97,3 +97,4 @@ AWS-ANSIBLE-DockerSwarm/
 - [ ] 환경별 설정 템플릿과 시크릿 매핑을 `env-config/`에 정리하고 문서화
 - [ ] CI/CD 파이프라인 정의를 `.github/`(또는 `ci/`)로 이동하고 인프라/서비스 파이프라인을 분리
 - [ ] `docs/INFRA_SERVICE_STRUCTURE.md`와 `AGENTS.md`에 구조 변경 내역을 반영하고 온보딩 가이드 갱신
+- [ ] Terraform에서 AWS Network Firewall + Firewall Manager 같은 고급 방화벽 정책을 토글(`firewall_enabled` 변수)로 끄고 켤 수 있도록 설계 보완

@@ -18,10 +18,10 @@ PROJECT_ROOT=$(cd "$SCRIPT_DIR/../.." &> /dev/null && pwd)
 TERRAFORM_ENVIRONMENT=${TERRAFORM_ENVIRONMENT:-production}
 
 echo "Setting up project environment (Terraform env: $TERRAFORM_ENVIRONMENT)..."
-TERRAFORM_DIR=$(cd "$PROJECT_ROOT/Iac/TERRAFORM/envs/$TERRAFORM_ENVIRONMENT" &> /dev/null && pwd)
+TERRAFORM_DIR=$(cd "$PROJECT_ROOT/infra/terraform/envs/$TERRAFORM_ENVIRONMENT" &> /dev/null && pwd)
 
 if [ -z "$TERRAFORM_DIR" ] || [ ! -d "$TERRAFORM_DIR" ]; then
-    echo "⚠️  Terraform environment directory를 찾을 수 없습니다: $PROJECT_ROOT/Iac/TERRAFORM/envs/$TERRAFORM_ENVIRONMENT"
+    echo "⚠️  Terraform environment directory를 찾을 수 없습니다: $PROJECT_ROOT/infra/terraform/envs/$TERRAFORM_ENVIRONMENT"
     return 1
 fi
 

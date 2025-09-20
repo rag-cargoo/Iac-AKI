@@ -1,3 +1,4 @@
+
 # AWS + Ansible + Docker Swarm 구축 트러블슈팅 기록
 
 > 프로젝트 진행 중 발생한 문제와 해결 과정을 기록한 문서입니다.  
@@ -87,10 +88,7 @@ Ansible 플레이북 실행 시 다음 경고 발생:
 *   `ssh-agent`에 키 미등록
 
 **해결 방법:**
-*   SSH common args를 dynamic inventory에 포함:
-    ```ini
-    ansible_ssh_common_args='-o StrictHostKeyChecking=no -o ForwardAgent=yes -o ProxyCommand="ssh -W %h:%p -q ubuntu @{bastion_ip} -i {ssh_key_file}"'
-    ```
+*   SSH common args는 `inventory_plugins/swarm.py`에서 자동으로 주입되도록 관리합니다.
 *   `ssh-agent` 실행 및 키 추가:
     ```bash
     eval "$(ssh-agent -s)"
@@ -109,13 +107,13 @@ Ansible 및 Docker CLI 정상 연결.
 **내용:**
 ```makefile
 run:
-  @bash -c "source $(SETUP_SCRIPT) && ansible-playbook $(ANSIBLE_PLAYBOOK) -i $(DYNAMIC_INVENTORY)"
+  @ANSIBLE_CONFIG=$(ANSIBLE_CFG) bash -c "source $(SETUP_SCRIPT) && ansible-playbook $(ANSIBLE_PLAYBOOK) -i $(INVENTORY_FILE)"
 
 setup_env:
   @bash -c "source $(SETUP_SCRIPT)"
 
 ansible:
-  @bash -c "source $(SETUP_SCRIPT) && ansible-playbook $(ANSIBLE_PLAYBOOK) -i $(DYNAMIC_INVENTORY)"
+  @ANSIBLE_CONFIG=$(ANSIBLE_CFG) bash -c "source $(SETUP_SCRIPT) && ansible-playbook $(ANSIBLE_PLAYBOOK) -i $(INVENTORY_FILE)"
 ```
 
 **결과:**

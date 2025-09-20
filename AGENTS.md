@@ -2,13 +2,13 @@
 
 ## Project Structure & Module Organization
 자세한 상위 설계와 리포 전략은 `docs/INFRA_SERVICE_STRUCTURE.md`에서 확인하세요.
-Terraform은 `Iac/TERRAFORM/modules/`에서 네트워크·보안·컴퓨트 모듈로 분리되며, 각 환경은 `Iac/TERRAFORM/envs/<environment>/`에서 모듈을 조합합니다. Ansible은 `Iac/ANSIBLE/roles/`의 역할 기반 구조(예: `docker_engine`, `swarm_manager`, `swarm_worker`)와 `playbooks/` 하위의 실행 단위 플레이북으로 구성됩니다. 동적 인벤토리는 `Iac/ANSIBLE/inventory/production/swarm.yml`이 `inventory_plugins/swarm.py` 스크립트를 호출하도록 정의되어 있습니다. 실행 스크립트는 `scripts/bin/`, 진단 및 보조 도구는 `scripts/tools/`, 문서는 `docs/` 및 `documentation/` 아래에 둡니다.
+Terraform은 `infra/terraform/modules/`에서 네트워크·보안·컴퓨트 모듈로 분리되며, 각 환경은 `infra/terraform/envs/<environment>/`에서 모듈을 조합합니다. Ansible은 `infra/ansible/roles/`의 역할 기반 구조(예: `docker_engine`, `swarm_manager`, `swarm_worker`)와 `playbooks/` 하위의 실행 단위 플레이북으로 구성됩니다. 동적 인벤토리는 `infra/ansible/inventory_plugins/swarm.py` 스크립트를 통해 제공되며 `ansible.cfg`가 기본 인벤토리로 참조합니다. 실행 스크립트는 `scripts/bin/`, 진단 및 보조 도구는 `scripts/tools/`, 문서는 `docs/` 및 `documentation/` 아래에 둡니다.
 
 ## Build, Test, and Development Commands
 - `make setup_env` — Terraform output을 로드하고 SSH 설정 및 환경 변수를 갱신합니다.
-- `make run` — 환경 설정 후 `ansible-playbook Iac/ANSIBLE/playbooks/cluster.yml`을 실행해 전체 클러스터를 구성합니다.
-- `cd Iac/TERRAFORM/envs/production && terraform init && terraform plan && terraform apply` — 프로비저닝 또는 업데이트 시 표준 순서를 따릅니다.
-- `ansible-playbook -i Iac/ANSIBLE/inventory/production/swarm.yml roles/docker_engine/tests/test.yml` — 기본 연결 상태를 점검합니다.
+- `make run` — 환경 설정 후 `ansible-playbook infra/ansible/playbooks/cluster.yml`을 실행해 전체 클러스터를 구성합니다.
+- `cd infra/terraform/envs/production && terraform init && terraform plan && terraform apply` — 프로비저닝 또는 업데이트 시 표준 순서를 따릅니다.
+- `ansible-playbook infra/ansible/roles/docker_engine/tests/test.yml` — 기본 연결 상태를 점검합니다.
 
 ## Coding Style & Naming Conventions
 YAML은 두 칸 들여쓰기를 유지하고 역할별 `tasks/`, `defaults/`, `tests/` 구조를 따릅니다. Terraform 모듈은 snake_case 변수와 `variables.tf`·`outputs.tf` 인터페이스를 명시하고, 환경 진입점은 모듈 호출 순서를 네트워크 → 보안 → 컴퓨트로 유지합니다. Shell 스크립트는 POSIX 구문과 대문자 환경 변수를 사용하며, Python 스크립트(`inventory_plugins/swarm.py`)는 `black` 스타일과 f-string을 일관되게 사용합니다.

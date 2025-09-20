@@ -25,11 +25,11 @@
 
 ### 3.1. 인프라 구축 (Terraform)
 
-`Iac/TERRAFORM/envs/production` 디렉토리에서 Terraform을 실행하여 AWS 인프라를 생성합니다. **변수 정의는 동일 디렉터리의 `terraform.tfvars`에서 관리합니다.** 자세한 내용은 `Iac/TERRAFORM/TFVARS_GUIDE.md`를 참조하십시오.
+`infra/terraform/envs/production` 디렉토리에서 Terraform을 실행하여 AWS 인프라를 생성합니다. **변수 정의는 동일 디렉터리의 `terraform.tfvars`에서 관리합니다.** 자세한 내용은 `infra/terraform/TFVARS_GUIDE.md`를 참조하십시오.
 
 1.  Terraform 초기화 및 프로바이더 다운로드:
     ```bash
-    cd Iac/TERRAFORM/envs/production
+    cd infra/terraform/envs/production
     terraform init -reconfigure
     ```
 2.  인프라 플랜 확인:
@@ -43,21 +43,17 @@
 
 ### 3.2. 서버 구성 및 배포 (Ansible)
 
-Ansible은 Terraform output을 기반으로 동적 인벤토리(`inventory/production/swarm.yml` → `inventory_plugins/swarm.py`)를 사용합니다. `ansible.cfg` 파일이 해당 인벤토리를 참조하도록 설정되어 있습니다.
+Ansible은 Terraform output을 기반으로 동적 인벤토리(`inventory_plugins/swarm.py`)를 사용합니다. `infra/ansible/ansible.cfg`가 해당 스크립트를 기본 인벤토리로 지정합니다.
 
 1.  Docker 설치 및 Swarm 클러스터 구성:
     ```bash
-    cd Iac/ANSIBLE
-    ansible-playbook \
-        -i inventory/production/swarm.yml \
-        playbooks/cluster.yml
+    cd infra/ansible
+    ansible-playbook playbooks/cluster.yml
     ```
 2.  Nginx 테스트 서비스 배포 (선택 사항):
     ```bash
-    cd Iac/ANSIBLE
-    ansible-playbook \
-        -i inventory/production/swarm.yml \
-        roles/swarm_manager/tests/deploy_nginx.yml
+    cd infra/ansible
+    ansible-playbook roles/swarm_manager/tests/deploy_nginx.yml
     ```
 
 ### 3.3. 서비스 확인
