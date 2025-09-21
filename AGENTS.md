@@ -7,6 +7,7 @@ Terraform은 `infra/terraform/modules/`에서 네트워크·보안·컴퓨트 �
 ## Build, Test, and Development Commands
 - `make setup_env` — Terraform output을 로드하고 SSH 설정 및 환경 변수를 갱신합니다.
 - `make run` — 환경 설정 후 `ansible-playbook infra/ansible/playbooks/cluster.yml`을 실행해 전체 클러스터를 구성합니다.
+- `ansible-playbook infra/ansible/playbooks/deploy_sample_app.yml` — 예제 Spring Boot 스택을 Swarm에 배포합니다.
 - `cd infra/terraform/envs/production && terraform init && terraform plan && terraform apply` — 프로비저닝 또는 업데이트 시 표준 순서를 따릅니다.
 - `ansible-playbook infra/ansible/roles/docker_engine/tests/test.yml` — 기본 연결 상태를 점검합니다.
 

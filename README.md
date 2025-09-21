@@ -68,6 +68,22 @@ docker service ls
 docker service ps nginx_web
 ```
 
+### 3.4. 샘플 Spring Boot 애플리케이션 배포 (옵션)
+
+`infra/ansible/roles/sample_app`와 `playbooks/deploy_sample_app.yml`을 사용하면 예제 Spring Boot 컨테이너(Nginx 프락시 기반)를 Swarm 스택으로 배포할 수 있습니다.
+
+```bash
+cd infra/ansible
+ansible-playbook playbooks/deploy_sample_app.yml
+```
+
+스택 상태 확인:
+
+```bash
+docker service ls | grep sample_app
+docker service ps sample_app_web
+```
+
 ## 4. EC2 인스턴스 접속 방법
 
 접속 및 배포 스크립트는 `scripts/bin/setup_project_env.sh` 스크립트를 통해 필요한 환경 변수(IP 주소, SSH 키 경로 등)를 로드합니다.

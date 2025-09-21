@@ -4,7 +4,7 @@ Entry point for provisioning the production Docker Swarm infrastructure. This la
 
 ## Usage
 ```bash
-# From Iac/TERRAFORM/envs/production
+# From infra/terraform/envs/production
 terraform init
 terraform plan
 terraform apply

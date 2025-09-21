@@ -6,7 +6,7 @@
 
 ## `terraform.tfvars` 사용 방법
 
-1.  대상 환경 디렉토리(`Iac/TERRAFORM/envs/<environment>`)에 `terraform.tfvars` 파일을 생성합니다.
+1.  대상 환경 디렉토리(`infra/terraform/envs/<environment>`)에 `terraform.tfvars` 파일을 생성합니다.
 2.  `key = "value"` 형식으로 필요한 변수를 이 파일에 정의합니다.
 
 ## 필수 변수
@@ -53,11 +53,14 @@ instance_type = "t3.micro"
 ssh_key_name = "my-ssh-key"
 ssh_key_file_path = "your_ssh_key_file_path" # Changed to placeholder
 my_ip = "your_public_ip/32" # Changed to placeholder
-manager_ip = "10.0.101.10"
-worker_nodes = {
-  "worker1" = { ip = "10.0.102.10", subnet_cidr = "10.0.102.0/24" },
-  "worker2" = { ip = "10.0.101.11", subnet_cidr = "10.0.101.0/24" }
-}
+managers = [
+  { name = "manager-1", private_ip = "10.0.101.10", subnet_name = "private-a" }
+]
+
+workers = [
+  { name = "worker-1", private_ip = "10.0.102.10", subnet_name = "private-b" },
+  { name = "worker-2", private_ip = "10.0.101.11", subnet_name = "private-a" }
+]
 ```
 
 **참고:** 보안을 위해 `terraform.tfvars` 파일을 `.gitignore`에 추가하는 것을 권장합니다.
