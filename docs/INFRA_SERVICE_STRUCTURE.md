@@ -4,22 +4,19 @@
 
 ```
 AWS-ANSIBLE-DockerSwarm/
-├── infra/                              # 인프라 전용 영역
+├── IAC/                                # 인프라(IaC) 전용 영역
 │   ├── terraform/                      # 네트워크·컴퓨트·보안 모듈, 환경별 디렉터리 (envs/prod 등)
-│   │   ├── modules/                    # reusable module (network, security, compute, monitoring 등)
+│   │   ├── modules/                    # reusable module (security, compute 등)
 │   │   └── envs/
 │   │       ├── production/
 │   │       └── staging/
 │   ├── ansible/                        # 서버/클러스터 프로비저닝 및 운영 자동화
 │   │   ├── roles/                      # docker_engine, swarm_manager, logging_agent 등 역할별 디렉터리
 │   │   ├── playbooks/
-│   │   └── inventory/
-│   ├── monitoring/                     # Prometheus/Grafana/ELK 등의 IaC, Helm 차트, Ansible 역할 등
-│   ├── cicd/                           # Jenkins/GitHub Actions runner 설정, pipeline-as-code
-│   ├── logging/                        # 중앙 로그 시스템 (ELK, Loki 등) 배포 및 설정 코드
-│   ├── backup/                         # 스냅샷, 데이터 백업 정책, 스크립트, Terraform 모듈
-│   ├── security/                       # IAM, KMS, 보안 스캐닝, 정책 템플릿
-│   └── docs/                           # 인프라 운영 문서, Runbook, 변경 기록
+│   │   └── inventory_plugins/
+│   └── platform/                       # 모니터링/성능 등 공통 운영 스택의 IaC (observability, performance 등)
+│       ├── observability/
+│       └── performance/
 ├── services/                           # 애플리케이션 코드 영역
 │   ├── service-a/
 │   │   ├── src/
@@ -40,16 +37,18 @@ AWS-ANSIBLE-DockerSwarm/
 > ※ 여러 리포로 쪼갤 경우에는 아래 "실무에서 자주 보이는 리포 분류 예시" 섹션의 명명 규칙을 참고해 별도 저장소로 분리해 운영하세요.
 
 ## 디렉터리별 설명
-- **infra/**: VPC, EC2, 보안 그룹, 모니터링 스택, CI/CD 인프라 등을 코드로 관리합니다. Terraform과 Ansible을 분리해 모듈화해 두면 환경 확장 및 DR 구성 시 유용합니다.
+- **IAC/**: Terraform과 Ansible을 통해 VPC, EC2, 보안 그룹, 관찰성 스택 등을 코드로 관리합니다. `terraform/`, `ansible/`, `platform/`(observability/performance)으로 세분화해 환경 확장 및 DR 구성 시 유용합니다.
 - **services/**: 실제 애플리케이션 소스 코드, 테스트, 배포 매니페스트를 보관합니다. 서비스별로 독립적인 CI 파이프라인과 배포 전략을 가질 수 있습니다.
-- **platform/**: 인프라와 서비스 사이를 잇는 공통 운영 자산(대시보드, 운영 스크립트, 표준 Makefile 등)을 저장합니다.
+- **env-config/**: 환경별 설정값(.env 템플릿, Vault/Secrets Manager 키 매핑, Feature Flag 정의 등)을 문서화하거나 템플릿화합니다.
+- **docs/**: 저장소 전반에 대한 가이드, 온보딩 문서, 아키텍처 다이어그램을 정리합니다.
+- **.github/** 또는 **ci/**: 저장소 레벨의 CI/CD 파이프라인 정의 파일을 모아둡니다.
 - **env-config/**: 환경별 설정값(.env 템플릿, Vault/Secrets Manager 키 매핑, Feature Flag 정의 등)을 문서화하거나 템플릿화합니다.
 - **docs/**: 저장소 전반에 대한 가이드, 온보딩 문서, 아키텍처 다이어그램을 정리합니다.
 - **.github/** 또는 **ci/**: 저장소 레벨의 CI/CD 파이프라인 정의 파일을 모아둡니다.
 
 ## 운영 시 고려 사항
 1. **권한 분리**: 인프라 변경은 제한된 승인 절차를 거치고, 서비스 코드는 팀별로 자율성을 보장합니다.
-2. **CI/CD 파이프라인**: `infra/`는 Terraform Plan → 승인 → Apply, `services/`는 Build → Test → Deploy 순으로 별도 파이프라인을 구성하면 안정적입니다.
+2. **CI/CD 파이프라인**: `IAC/`는 Terraform Plan → 승인 → Apply, `services/`는 Build → Test → Deploy 순으로 별도 파이프라인을 구성하면 안정적입니다.
 3. **백업/로그/모니터링**: 인프라 계층에서 공용으로 제공하면서도 서비스 팀이 쉽게 연동할 수 있도록 템플릿과 예제 플레이북을 제공하세요.
 4. **문서화**: 구조 변경 시 `docs/INFRA_SERVICE_STRUCTURE.md`와 같은 문서를 최신 상태로 유지하여 신규 기여자가 빠르게 온보딩할 수 있게 합니다.
 
@@ -90,7 +89,7 @@ AWS-ANSIBLE-DockerSwarm/
 > 아래 단계는 현 리포지토리를 위 구조로 확장할 때 참고할 수 있는 TODO 목록입니다. 완료한 항목은 체크 표시(✓)로 업데이트해 진행 상황을 관리하세요.
 
 - [ ] 최상위에 `infra/`, `services/`, `platform/`, `env-config/` 디렉터리 스켈레톤 생성
-- [ ] 기존 `Iac/` 내용을 `infra/terraform/` 및 `infra/ansible/`로 이동하고 경로/스크립트 업데이트
+- [ ] 기존 `Iac/` 내용을 `IAC/terraform/` 및 `IAC/ansible/`로 이동하고 경로/스크립트 업데이트
 - [ ] 모니터링, 로깅, 백업 등 추가 인프라 스택을 `infra/monitoring/`, `infra/logging/` 등에 분리 배치
 - [ ] 서비스 애플리케이션 코드를 `services/<service-name>/` 구조에 맞춰 분리하고 배포 매니페스트 정리
 - [ ] 공통 스크립트와 자동화 도구를 `platform/scripts/` 혹은 패키지 리포로 이동

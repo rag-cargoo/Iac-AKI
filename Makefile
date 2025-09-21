@@ -4,8 +4,8 @@ SHELL := /bin/bash
 .DEFAULT_GOAL := run
 
 SETUP_SCRIPT=./scripts/bin/setup_project_env.sh
-ANSIBLE_PLAYBOOK=infra/ansible/playbooks/cluster.yml
-ANSIBLE_CFG=infra/ansible/ansible.cfg
+ANSIBLE_PLAYBOOK=IAC/ansible/playbooks/cluster.yml
+ANSIBLE_CFG=IAC/ansible/ansible.cfg
 ANSIBLE_CONFIG_CMD=ANSIBLE_CONFIG=$(CURDIR)/$(ANSIBLE_CFG)
 
 .PHONY: run setup_env ansible clean

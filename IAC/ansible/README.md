@@ -10,7 +10,7 @@
 ## 사용법
 ```bash
 # 환경 변수 로드 (scripts/bin/setup_project_env.sh 참고)
-cd infra/ansible
+cd IAC/ansible
 ansible-playbook playbooks/cluster.yml
 
 # 샘플 애플리케이션 배포 (옵션)

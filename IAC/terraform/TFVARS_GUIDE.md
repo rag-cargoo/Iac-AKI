@@ -6,7 +6,7 @@
 
 ## `terraform.tfvars` 사용 방법
 
-1.  대상 환경 디렉토리(`infra/terraform/envs/<environment>`)에 `terraform.tfvars` 파일을 생성합니다.
+1.  대상 환경 디렉터리(`IAC/terraform/envs/<environment>`)에 `terraform.tfvars` 파일을 생성합니다.
 2.  `key = "value"` 형식으로 필요한 변수를 이 파일에 정의합니다.
 
 ## 필수 변수

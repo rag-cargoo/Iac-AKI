@@ -25,11 +25,11 @@
 
 ### 3.1. 인프라 구축 (Terraform)
 
-`infra/terraform/envs/production` 디렉토리에서 Terraform을 실행하여 AWS 인프라를 생성합니다. **변수 정의는 동일 디렉터리의 `terraform.tfvars`에서 관리합니다.** 자세한 내용은 `infra/terraform/TFVARS_GUIDE.md`를 참조하십시오.
+`IAC/terraform/envs/production` 디렉터리에서 Terraform을 실행하여 AWS 인프라를 생성합니다. **변수 정의는 동일 디렉터리의 `terraform.tfvars`에서 관리합니다.** 자세한 내용은 `IAC/terraform/TFVARS_GUIDE.md`를 참조하십시오.
 
 1.  Terraform 초기화 및 프로바이더 다운로드:
     ```bash
-    cd infra/terraform/envs/production
+    cd IAC/terraform/envs/production
     terraform init -reconfigure
     ```
 2.  인프라 플랜 확인:
@@ -43,16 +43,16 @@
 
 ### 3.2. 서버 구성 및 배포 (Ansible)
 
-Ansible은 Terraform output을 기반으로 동적 인벤토리(`inventory_plugins/swarm.py`)를 사용합니다. `infra/ansible/ansible.cfg`가 해당 스크립트를 기본 인벤토리로 지정합니다.
+Ansible은 Terraform output을 기반으로 동적 인벤토리(`inventory_plugins/swarm.py`)를 사용합니다. `IAC/ansible/ansible.cfg`가 해당 스크립트를 기본 인벤토리로 지정합니다.
 
 1.  Docker 설치 및 Swarm 클러스터 구성:
     ```bash
-    cd infra/ansible
+    cd IAC/ansible
     ansible-playbook playbooks/cluster.yml
     ```
 2.  Nginx 테스트 서비스 배포 (선택 사항):
     ```bash
-    cd infra/ansible
+    cd IAC/ansible
     ansible-playbook roles/swarm_manager/tests/deploy_nginx.yml
     ```
 
@@ -70,10 +70,10 @@ docker service ps nginx_web
 
 ### 3.4. 샘플 Spring Boot 애플리케이션 배포 (옵션)
 
-`infra/ansible/roles/sample_app`와 `playbooks/deploy_sample_app.yml`을 사용하면 예제 Spring Boot 컨테이너(Nginx 프락시 기반)를 Swarm 스택으로 배포할 수 있습니다.
+`IAC/ansible/roles/sample_app`와 `playbooks/deploy_sample_app.yml`을 사용하면 예제 Spring Boot 컨테이너(Nginx 프락시 기반)를 Swarm 스택으로 배포할 수 있습니다.
 
 ```bash
-cd infra/ansible
+cd IAC/ansible
 ansible-playbook playbooks/deploy_sample_app.yml
 ```
 

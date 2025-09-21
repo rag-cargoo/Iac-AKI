@@ -11,7 +11,7 @@ source "${SCRIPT_DIR}/setup_project_env.sh"
 # --- Configuration ---
 # Determine project root and terraform directory
 PROJECT_ROOT=$(cd "$SCRIPT_DIR/../.." &> /dev/null && pwd)
-TERRAFORM_DIR="$PROJECT_ROOT/infra/terraform"
+TERRAFORM_DIR="$PROJECT_ROOT/IAC/terraform"
 
 SSH_KEY_PATH="$SSH_KEY_PATH" # Now comes from environment variable
 SSH_USER="ubuntu"
