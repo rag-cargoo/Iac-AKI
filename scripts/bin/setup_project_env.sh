@@ -66,7 +66,7 @@ except json.JSONDecodeError:
 required_keys = (
     "bastion_public_ip",
     "ssh_key_file_path",
-    "manager_private_ip",
+    "manager_private_ips",
     "worker_private_ips",
 )
 values = []
@@ -81,7 +81,9 @@ for key in required_keys:
 
 print(values[0])
 print(values[1])
-print(values[2])
+# 첫 번째 매니저 IP만 선택, 없으면 빈 문자열
+manager_ips = values[2] if isinstance(values[2], list) else []
+print(manager_ips[0] if manager_ips else "")
 workers = values[3] if isinstance(values[3], list) else []
 print(" ".join(str(ip) for ip in workers if ip))
 PY
