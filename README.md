@@ -75,9 +75,9 @@ Terraform으로 AWS 인프라를 프로비저닝하고, Ansible로 Docker Swarm 
 - 터널링 스크립트: `./scripts/bin/connect_service_tunnel.sh`
 
 ### 노트북 기반 확장
-- 운영/모니터링 예시: `04-runtime/notebooks/deploy-observability.ipynb`
-- 애플리케이션 배포 예시: `04-runtime/notebooks/deploy-spring-app.ipynb`
-- 부하 테스트: `platform/performance/k6_tests.ipynb`
+- 운영/모니터링 (Prometheus · Grafana · Loki): [deploy-observability.ipynb](04-runtime/notebooks/deploy-observability.ipynb)
+- 애플리케이션 배포 샘플(Spring Boot): [deploy-spring-app.ipynb](04-runtime/notebooks/deploy-spring-app.ipynb)
+- 부하 테스트(k6): [k6-tests.ipynb](04-runtime/notebooks/k6-tests.ipynb)
   *모든 노트북은 첫 셀에서 `export DOCKER_HOST="ssh://swarm-manager"`를 보장해야 합니다.*
 
 ---
