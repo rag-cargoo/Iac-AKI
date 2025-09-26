@@ -132,9 +132,14 @@ echo "🔹 Step 1.5: Cleanup old SSH host keys"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
 ssh-keygen -R "$BASTION_PUBLIC_IP" 2>/dev/null
+ssh-keygen -R "bastion-host" 2>/dev/null
 ssh-keygen -R "$MANAGER_PRIVATE_IP" 2>/dev/null
+ssh-keygen -R "swarm-manager" 2>/dev/null
+worker_index=1
 for ip in $WORKER_PRIVATE_IPS; do
     ssh-keygen -R "$ip" 2>/dev/null
+    ssh-keygen -R "worker${worker_index}" 2>/dev/null
+    worker_index=$((worker_index + 1))
 done
 
 echo "✅ Old SSH host keys removed from known_hosts"
@@ -218,10 +223,23 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━�
 echo "🔹 Step 2.5: Register SSH known_hosts"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
-ssh-keyscan -H "$BASTION_PUBLIC_IP" >> ~/.ssh/known_hosts 2>/dev/null || true
-ssh-keyscan -H "$MANAGER_PRIVATE_IP" >> ~/.ssh/known_hosts 2>/dev/null || true
+ensure_known_host() {
+    local alias="$1"
+    ssh -F "$SSH_CONFIG_FILE" \
+        -o BatchMode=yes \
+        -o StrictHostKeyChecking=accept-new \
+        -o UserKnownHostsFile="$HOME/.ssh/known_hosts" \
+        -o ConnectTimeout=15 \
+        "$alias" true </dev/null >/dev/null 2>&1 || true
+}
+
+ensure_known_host "bastion-host"
+ensure_known_host "swarm-manager"
+
+worker_index=1
 for ip in $WORKER_PRIVATE_IPS; do
-    ssh-keyscan -H "$ip" >> ~/.ssh/known_hosts 2>/dev/null || true
+    ensure_known_host "worker${worker_index}"
+    worker_index=$((worker_index + 1))
 done
 
 echo "✅ Hosts added to known_hosts to avoid authenticity prompt"
