@@ -36,6 +36,7 @@ Terraform으로 AWS 인프라를 프로비저닝하고, Ansible로 Docker Swarm 
    # 예: 04-runtime/notebooks/deploy-observability.ipynb 실행
    ```
    *필요 시 `ssh -N -L 9000:localhost:9000 -L 9090:localhost:9090 -L 3000:localhost:3000 swarm-manager`로 포트 포워딩을 설정해 웹 UI를 확인합니다.*
+   *프롬프트 앞에 `[swarm]`이 보이면 `DOCKER_HOST`가 원격 매니저로 설정된 상태입니다.*
 
 ---
 
