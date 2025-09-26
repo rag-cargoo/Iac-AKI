@@ -18,10 +18,10 @@ PROJECT_ROOT=$(cd "$SCRIPT_DIR/../.." &> /dev/null && pwd)
 TERRAFORM_ENVIRONMENT=${TERRAFORM_ENVIRONMENT:-production}
 
 echo "Setting up project environment (Terraform env: $TERRAFORM_ENVIRONMENT)..."
-TERRAFORM_DIR=$(cd "$PROJECT_ROOT/IAC/terraform/envs/$TERRAFORM_ENVIRONMENT" &> /dev/null && pwd)
+TERRAFORM_DIR=$(cd "$PROJECT_ROOT/01-infrastructure/terraform/envs/$TERRAFORM_ENVIRONMENT" &> /dev/null && pwd)
 
 if [ -z "$TERRAFORM_DIR" ] || [ ! -d "$TERRAFORM_DIR" ]; then
-    echo "⚠️  Terraform environment directory를 찾을 수 없습니다: $PROJECT_ROOT/IAC/terraform/envs/$TERRAFORM_ENVIRONMENT"
+    echo "⚠️  Terraform environment directory를 찾을 수 없습니다: $PROJECT_ROOT/01-infrastructure/terraform/envs/$TERRAFORM_ENVIRONMENT"
     return 1
 fi
 
@@ -195,6 +195,21 @@ done
 
 echo "✅ SSH config updated with bastion, manager, and worker nodes"
 
+# Collapse repeated blank lines to keep ~/.ssh/config tidy
+if command -v awk >/dev/null 2>&1; then
+    tmp_config=$(mktemp)
+    awk 'BEGIN{blank=0} {
+        if ($0 ~ /^[[:space:]]*$/) {
+            if (blank) next
+            blank=1
+        } else {
+            blank=0
+        }
+        print
+    }' "$SSH_CONFIG_FILE" > "$tmp_config" && mv "$tmp_config" "$SSH_CONFIG_FILE"
+    chmod 600 "$SSH_CONFIG_FILE"
+fi
+
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 # Step 2.5: Register hosts in known_hosts
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -242,8 +257,10 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━�
 echo "🔹 Step 4: Docker host setup"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
-echo "ℹ️ To use Docker commands locally for the Swarm cluster, run:"
-echo "   export DOCKER_HOST=\"ssh://swarm-manager\""
+DOCKER_HOST="ssh://swarm-manager"
+export DOCKER_HOST
+echo "✅ DOCKER_HOST set to ssh://swarm-manager"
+echo "   (run 'unset DOCKER_HOST' to switch back to the local Docker daemon)"
 
 echo
 echo "🎉 Project environment setup complete. You can now run Ansible commands and connection scripts."

@@ -31,8 +31,7 @@ Terraform으로 AWS 인프라를 프로비저닝하고, Ansible로 Docker Swarm 
 
 4. **추가 스택 배포 (옵션)**
    ```bash
-   source scripts/bin/setup_project_env.sh
-   export DOCKER_HOST="ssh://swarm-manager"
+   source scripts/bin/setup_project_env.sh  # DOCKER_HOST=ssh://swarm-manager 자동 설정
    # 예: 04-runtime/notebooks/deploy-observability.ipynb 실행
    ```
    *필요 시 `ssh -N -L 9000:localhost:9000 -L 9090:localhost:9090 -L 3000:localhost:3000 swarm-manager`로 포트 포워딩을 설정해 웹 UI를 확인합니다.*
@@ -66,7 +65,7 @@ Terraform으로 AWS 인프라를 프로비저닝하고, Ansible로 Docker Swarm 
 
 ### SSH 및 Docker CLI 팁
 - `scripts/bin/setup_project_env.sh`는 Terraform output을 읽어 `~/.ssh/config`, `BASTION_PUBLIC_IP`, `MANAGER_PRIVATE_IPS`, `WORKER_PRIVATE_IPS`, `SSH_KEY_PATH` 등을 갱신합니다.
-- 스크립트 실행 후 출력되는 `export DOCKER_HOST="ssh://swarm-manager"`를 동일 셀에서 실행하면 로컬 Docker CLI가 Swarm에 접근합니다.
+- 스크립트 실행 시 `DOCKER_HOST=ssh://swarm-manager`가 자동 설정됩니다. 로컬 Docker로 돌아가려면 `unset DOCKER_HOST`를 실행하세요.
 - ssh-agent가 자동 시작되지 않으면 다음을 수동 실행하세요.
   ```bash
   eval "$(ssh-agent -s)"
@@ -74,6 +73,11 @@ Terraform으로 AWS 인프라를 프로비저닝하고, Ansible로 Docker Swarm 
   ```
 - 직접 접속: `ssh swarm-manager`
 - 터널링 스크립트: `./scripts/bin/connect_service_tunnel.sh`
+- 프롬프트에 `[swarm]` 표시를 자동 추가하고 싶다면 한 번만 아래를 실행하세요.
+  ```bash
+  scripts/tools/install_swarm_prompt.sh
+  source ~/.bashrc
+  ```
 
 ### 노트북 기반 확장
 - 운영/모니터링 (Prometheus · Grafana · Loki): [deploy-observability.ipynb](04-runtime/notebooks/deploy-observability.ipynb)
