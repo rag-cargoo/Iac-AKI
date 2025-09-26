@@ -225,20 +225,32 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━�
 
 ensure_known_host() {
     local alias="$1"
+    local ip="$2"
+
     ssh -F "$SSH_CONFIG_FILE" \
         -o BatchMode=yes \
         -o StrictHostKeyChecking=accept-new \
         -o UserKnownHostsFile="$HOME/.ssh/known_hosts" \
         -o ConnectTimeout=15 \
         "$alias" true </dev/null >/dev/null 2>&1 || true
+
+    if [ -n "$ip" ]; then
+        ssh -F "$SSH_CONFIG_FILE" \
+            -o BatchMode=yes \
+            -o StrictHostKeyChecking=accept-new \
+            -o UserKnownHostsFile="$HOME/.ssh/known_hosts" \
+            -o HostKeyAlias="$ip" \
+            -o ConnectTimeout=15 \
+            "$alias" true </dev/null >/dev/null 2>&1 || true
+    fi
 }
 
-ensure_known_host "bastion-host"
-ensure_known_host "swarm-manager"
+ensure_known_host "bastion-host" "$BASTION_PUBLIC_IP"
+ensure_known_host "swarm-manager" "$MANAGER_PRIVATE_IP"
 
 worker_index=1
 for ip in $WORKER_PRIVATE_IPS; do
-    ensure_known_host "worker${worker_index}"
+    ensure_known_host "worker${worker_index}" "$ip"
     worker_index=$((worker_index + 1))
 done
 
