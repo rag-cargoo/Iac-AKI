@@ -1,0 +1,7 @@
+---
+- name: Verify base connectivity after docker_engine role
+  hosts: swarm_nodes
+  gather_facts: false
+  tasks:
+    - name: Check uptime
+      ansible.builtin.command: uptime

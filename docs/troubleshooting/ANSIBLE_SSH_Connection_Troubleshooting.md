@@ -47,7 +47,7 @@ ansible.cfg
 ini
 코드 복사
 [defaults]
-inventory = ../../scripts/core_utils/dynamic_inventory.py
+inventory = inventory/production/swarm.yml
 host_key_checking = False
 remote_user = ubuntu
 collections_path = ~/.ansible/collections

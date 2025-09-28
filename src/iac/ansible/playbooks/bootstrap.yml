@@ -1,0 +1,6 @@
+---
+- name: Configure base Docker runtime only
+  hosts: swarm_nodes
+  become: true
+  roles:
+    - docker_engine

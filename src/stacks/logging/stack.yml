@@ -1,0 +1,50 @@
+version: '3.8'
+services:
+  loki:
+    image: grafana/loki:2.9.6
+    command: ["-config.file=/etc/loki/local-config.yml"]
+    configs:
+      - source: loki-config
+        target: /etc/loki/local-config.yml
+    ports:
+      - target: 3100
+        published: 3100
+        protocol: tcp
+        mode: host
+    volumes:
+      - loki-data:/loki
+    networks:
+      - logging_net
+    deploy:
+      placement:
+        constraints:
+          - node.role == manager
+      restart_policy:
+        condition: on-failure
+
+  promtail:
+    image: grafana/promtail:2.9.6
+    command: ["-config.file=/etc/promtail/promtail.yml"]
+    configs:
+      - source: promtail-config
+        target: /etc/promtail/promtail.yml
+    volumes:
+      - /var/log:/var/log:ro
+    networks:
+      - logging_net
+    deploy:
+      restart_policy:
+        condition: on-failure
+
+configs:
+  loki-config:
+    file: ./loki.yml
+  promtail-config:
+    file: ./promtail/promtail.yml
+
+volumes:
+  loki-data:
+
+networks:
+  logging_net:
+    external: true

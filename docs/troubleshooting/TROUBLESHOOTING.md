@@ -1,3 +1,4 @@
+
 # AWS + Ansible + Docker Swarm 구축 트러블슈팅 기록
 
 > 프로젝트 진행 중 발생한 문제와 해결 과정을 기록한 문서입니다.  
@@ -11,8 +12,8 @@
 Ansible 실행 시 dynamic_inventory.py가 작동하지 않고 환경 변수 미설정 에러 발생.
 
 ```text
-Error: Required environment variables (BASTION_PUBLIC_IP, MANAGER_PRIVATE_IP, WORKER_PRIVATE_IPS, SSH_KEY_PATH) are not set.
-Please source scripts/core_utils/setup_project_env.sh first.
+Error: Missing required environment variables: BASTION_PUBLIC_IP, MANAGER_PRIVATE_IP, SSH_KEY_PATH
+Please source run/common/setup_env.sh first.
 ```
 
 **원인:**
@@ -20,14 +21,14 @@ Please source scripts/core_utils/setup_project_env.sh first.
 *   Ansible이 dynamic_inventory.py를 호출할 때 환경 변수를 찾지 못함.
 
 **해결 방법:**
-*   반드시 프로젝트 환경 설정 스크립트 먼저 실행:
+*   반드시 프로젝트 환경 설정 스크립트를 먼저 실행:
     ```bash
-    source scripts/core_utils/setup_project_env.sh
+    source run/common/setup_env.sh
     ```
 *   Makefile을 만들어 환경 설정 + Ansible 플레이북 실행을 한 번에 수행:
     ```makefile
     run:
-      @bash -c "source $(SETUP_SCRIPT) && ansible-playbook $(ANSIBLE_PLAYBOOK) -i $(DYNAMIC_INVENTORY)"
+      @ANSIBLE_CONFIG=$(ANSIBLE_CFG) bash -c "source $(SETUP_SCRIPT) && ansible-playbook $(ANSIBLE_PLAYBOOK) -i $(INVENTORY_FILE)"
     ```
 
 **결과:**
@@ -87,10 +88,7 @@ Ansible 플레이북 실행 시 다음 경고 발생:
 *   `ssh-agent`에 키 미등록
 
 **해결 방법:**
-*   SSH common args를 dynamic inventory에 포함:
-    ```ini
-    ansible_ssh_common_args='-o StrictHostKeyChecking=no -o ForwardAgent=yes -o ProxyCommand="ssh -W %h:%p -q ubuntu @{bastion_ip} -i {ssh_key_file}"'
-    ```
+*   SSH common args는 `inventory_plugins/swarm.py`에서 자동으로 주입되도록 관리합니다.
 *   `ssh-agent` 실행 및 키 추가:
     ```bash
     eval "$(ssh-agent -s)"
@@ -109,13 +107,13 @@ Ansible 및 Docker CLI 정상 연결.
 **내용:**
 ```makefile
 run:
-  @bash -c "source $(SETUP_SCRIPT) && ansible-playbook $(ANSIBLE_PLAYBOOK) -i $(DYNAMIC_INVENTORY)"
+  @ANSIBLE_CONFIG=$(ANSIBLE_CFG) bash -c "source $(SETUP_SCRIPT) && ansible-playbook $(ANSIBLE_PLAYBOOK) -i $(INVENTORY_FILE)"
 
 setup_env:
   @bash -c "source $(SETUP_SCRIPT)"
 
 ansible:
-  @bash -c "source $(SETUP_SCRIPT) && ansible-playbook $(ANSIBLE_PLAYBOOK) -i $(DYNAMIC_INVENTORY)"
+  @ANSIBLE_CONFIG=$(ANSIBLE_CFG) bash -c "source $(SETUP_SCRIPT) && ansible-playbook $(ANSIBLE_PLAYBOOK) -i $(INVENTORY_FILE)"
 ```
 
 **결과:**
@@ -127,8 +125,11 @@ ansible:
 
 | 문제 원인             | 해결 방법                                    | 상태 |
 | :-------------------- | :------------------------------------------- | :--- |
-| Dynamic Inventory 실행 실패 | `setup_project_env.sh` 먼저 실행, Makefile 사용 | 해결 |
+| Dynamic Inventory 실행 실패 | `run/common/setup_env.sh` 먼저 실행, Makefile 사용 | 해결 |
 | 워커 노드 Swarm 조인 실패 | 플레이북 수정 및 환경 변수 정상화            | 해결 |
 | Python 인터프리터 경고    | 무시 가능, 필요 시 `ansible_python_interpreter` 지정 | 경고만 |
 | SSH 연결 실패           | Bastion 설정, `ssh-agent` 키 추가            | 해결 |
 | 반복 실행 번거로움      | Makefile 통합 실행                           | 해결 |
+| Docker CLI 호스트 키 검증 실패 | `setup_env.sh`에서 SSH 옵션 강화, `StrictHostKeyChecking no` 설정 | 해결 |
+
+> Docker CLI 관련 상세 원인은 `docs/troubleshooting/docker_host_key_verification.md` 참고.

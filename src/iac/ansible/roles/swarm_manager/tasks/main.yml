@@ -1,0 +1,11 @@
+---
+- name: Ensure Docker Swarm is initialized on the manager
+  community.docker.docker_swarm:
+    state: present
+    advertise_addr: "{{ swarm_manager_advertise_addr }}"
+  register: swarm_manager_result
+
+- name: Cache worker join token for workers
+  ansible.builtin.set_fact:
+    swarm_worker_join_token: "{{ swarm_manager_result.swarm_facts.JoinTokens.Worker }}"
+  when: swarm_manager_result.swarm_facts is defined and swarm_manager_result.swarm_facts.JoinTokens is defined

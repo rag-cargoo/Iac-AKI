@@ -1,0 +1,24 @@
+---
+- name: Inspect authorized_keys on the manager node
+  hosts: swarm_manager
+  become: true
+  tasks:
+    - name: Get authorized_keys file stats
+      ansible.builtin.stat:
+        path: /home/ubuntu/.ssh/authorized_keys
+      register: auth_keys_stat
+
+    - name: Read authorized_keys content
+      ansible.builtin.slurp:
+        src: /home/ubuntu/.ssh/authorized_keys
+      register: auth_keys_content
+      when: auth_keys_stat.stat.exists
+
+    - name: Debug authorized_keys info
+      ansible.builtin.debug:
+        msg:
+          - "Authorized keys exists: {{ auth_keys_stat.stat.exists }}"
+          - "Authorized keys mode: {{ auth_keys_stat.stat.mode }}"
+          - "Authorized keys owner: {{ auth_keys_stat.stat.pw_name }}"
+          - "Authorized keys content: {{ auth_keys_content.content | b64decode }}"
+      when: auth_keys_stat.stat.exists

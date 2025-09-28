@@ -12,16 +12,12 @@
 
 ```ini
 [defaults]
-inventory = ../../scripts/core_utils/dynamic_inventory.py
+inventory = inventory/production/swarm.yml
 host_key_checking = False
 remote_user = ubuntu
-collections_paths = /home/aki/.ansible/collections
 
 [inventory]
 enable_plugins = script
-
-[ssh_connection]
-ssh_args = -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null
 ```
 
 - host_key_checking = False → Ansible 실행 시 yes/no 질문 방지
@@ -47,5 +43,4 @@ ssh-keygen -f ~/.ssh/known_hosts -R "10.0.101.11"
 - Ansible 실행만 중요하다면 ansible.cfg 수정으로 문제 해결.
 
 - 로컬 ssh도 깔끔하게 쓰고 싶다면 ssh-keygen -R 명령으로 오래된 키를 삭제.
-
 
