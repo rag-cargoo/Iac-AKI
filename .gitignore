@@ -18,3 +18,4 @@ terraform.tfvars
 *.env
 *.log
 *.tmp
+run/common/.setup_env_cache

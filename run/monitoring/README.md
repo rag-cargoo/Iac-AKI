@@ -49,7 +49,6 @@ docker network rm monitoring_net logging_net 2>/dev/null || true
 ```
 
 ---
-
 ## 5. (옵션) 포트 포워딩
 Prometheus(9090), Grafana(3000)에 로컬 브라우저로 접속하려면:
 ```bash
@@ -61,3 +60,4 @@ ssh -N -L 9090:localhost:9090 -L 3000:localhost:3000 swarm-manager
 ### 참고
 - `src/stacks/monitoring/stack.yml`이 서비스 정의를, `run/monitoring/README.md`가 실행 단계를 담당합니다.
 - 동일한 패턴으로 다른 서비스도 `run/<service>/` 아래에 정리할 수 있습니다.
+- Grafana 대시보드 JSON은 `run/monitoring/dashboards/` 디렉터리에 보관해 두면 Terraform을 내려도 손쉽게 재사용할 수 있습니다.

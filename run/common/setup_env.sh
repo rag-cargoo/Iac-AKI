@@ -10,12 +10,167 @@ print_banner(){
   echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 }
 
+CACHE_SCHEMA_VERSION=1
+SSH_USER="ubuntu"
+SSH_CONNECT_FLAGS="-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o BatchMode=yes -o ConnectTimeout=10"
+CACHE_FAILURE_REASON=""
+
+load_cached_env(){
+  if [ ! -f "$CACHE_FILE" ]; then
+    return 1
+  fi
+  # shellcheck disable=SC1090
+  source "$CACHE_FILE"
+  return 0
+}
+
+validate_cached_env(){
+  if [ "${CACHE_VERSION:-}" != "$CACHE_SCHEMA_VERSION" ]; then
+    return 1
+  fi
+  if [ "${CACHED_TERRAFORM_ENVIRONMENT:-}" != "$TERRAFORM_ENVIRONMENT" ]; then
+    return 1
+  fi
+  if [ -z "${BASTION_PUBLIC_IP:-}" ] || [ -z "${SSH_KEY_PATH:-}" ] || [ -z "${MANAGER_PRIVATE_IP:-}" ]; then
+    return 1
+  fi
+
+  SSH_KEY_PATH=$(eval echo "$SSH_KEY_PATH")
+  if [ ! -f "$SSH_KEY_PATH" ]; then
+    return 1
+  fi
+
+  if [ -z "${WORKER_PRIVATE_IPS+x}" ]; then
+    WORKER_PRIVATE_IPS=""
+  fi
+
+  if [ -z "${SWARM_PROXY_HOST:-}" ]; then
+    SWARM_PROXY_HOST="${SSH_USER}@${BASTION_PUBLIC_IP}"
+  fi
+
+  export BASTION_PUBLIC_IP SSH_KEY_PATH MANAGER_PRIVATE_IP WORKER_PRIVATE_IPS SWARM_PROXY_HOST
+
+  local ssh_flags="$SSH_CONNECT_FLAGS"
+  if ! ssh -i "$SSH_KEY_PATH" $ssh_flags "${SSH_USER}@${BASTION_PUBLIC_IP}" true >/dev/null 2>&1; then
+    return 1
+  fi
+
+  if command -v docker >/dev/null 2>&1; then
+    if ! DOCKER_HOST= DOCKER_CONTEXT= docker context inspect swarm-manager >/dev/null 2>&1; then
+      return 1
+    fi
+    if ! DOCKER_HOST= DOCKER_CONTEXT= docker context use swarm-manager >/dev/null 2>&1; then
+      return 1
+    fi
+    local -a node_hostnames=()
+    if ! mapfile -t node_hostnames < <(DOCKER_CONTEXT=swarm-manager docker node ls --format '{{.Hostname}}' 2>/dev/null); then
+      return 1
+    fi
+    local -a current_nodes_list=()
+    local node_name node_ip
+    for node_name in "${node_hostnames[@]}"; do
+      [ -z "$node_name" ] && continue
+      if ! node_ip=$(DOCKER_CONTEXT=swarm-manager docker node inspect "$node_name" --format '{{ .Status.Addr }}' 2>/dev/null); then
+        return 1
+      fi
+      if [ -n "$node_ip" ]; then
+        current_nodes_list+=("$node_ip")
+      fi
+    done
+    if [ ${#current_nodes_list[@]} -eq 0 ]; then
+      return 1
+    fi
+    local current_nodes
+    if ! current_nodes=$(printf '%s\n' "${current_nodes_list[@]}" | LC_ALL=C sort -u); then
+      return 1
+    fi
+    local -a expected_nodes_list=("$MANAGER_PRIVATE_IP")
+    if [ -n "$WORKER_PRIVATE_IPS" ]; then
+      # shellcheck disable=SC2206
+      local -a worker_array=($WORKER_PRIVATE_IPS)
+      expected_nodes_list+=("${worker_array[@]}")
+    fi
+    local expected_nodes
+    if ! expected_nodes=$(printf '%s\n' "${expected_nodes_list[@]}" | LC_ALL=C sort -u); then
+      return 1
+    fi
+    if [ "$current_nodes" != "$expected_nodes" ]; then
+      return 1
+    fi
+  fi
+
+  return 0
+}
+
+attempt_cached_bootstrap(){
+  CACHE_FAILURE_REASON=""
+  if [ -n "${SETUP_ENV_FORCE:-}" ]; then
+    CACHE_FAILURE_REASON="forced"
+    return 1
+  fi
+  if [ ! -f "$CACHE_FILE" ]; then
+    CACHE_FAILURE_REASON="missing"
+    return 1
+  fi
+  if ! load_cached_env; then
+    CACHE_FAILURE_REASON="load_failed"
+    return 1
+  fi
+  if ! validate_cached_env; then
+    CACHE_FAILURE_REASON="invalid"
+    return 1
+  fi
+
+  print_banner "Step 1 (cached): Terraform outputs"
+  echo "✅ BASTION_PUBLIC_IP=$BASTION_PUBLIC_IP"
+  echo "✅ SSH_KEY_PATH=$SSH_KEY_PATH"
+  echo "✅ MANAGER_PRIVATE_IP=$MANAGER_PRIVATE_IP"
+  [ -n "$WORKER_PRIVATE_IPS" ] && echo "✅ WORKER_PRIVATE_IPS=$WORKER_PRIVATE_IPS" || echo "ℹ️  No worker IPs"
+
+  export SETUP_ENV_INITIALIZED=1
+  echo
+  print_banner "Complete"
+  echo "🎉 Environment setup loaded from cache"
+  echo "ℹ️  Use 'make setup_env_refresh' or set SETUP_ENV_FORCE=1 to refresh the environment."
+  return 0
+}
+
+save_cache(){
+  local tmp
+  tmp=$(mktemp) || return 1
+  {
+    printf 'CACHE_VERSION=%q\n' "$CACHE_SCHEMA_VERSION"
+    printf 'CACHED_TERRAFORM_ENVIRONMENT=%q\n' "$TERRAFORM_ENVIRONMENT"
+    printf 'BASTION_PUBLIC_IP=%q\n' "$BASTION_PUBLIC_IP"
+    printf 'SSH_KEY_PATH=%q\n' "$SSH_KEY_PATH"
+    printf 'MANAGER_PRIVATE_IP=%q\n' "$MANAGER_PRIVATE_IP"
+    printf 'WORKER_PRIVATE_IPS=%q\n' "$WORKER_PRIVATE_IPS"
+    printf 'SWARM_PROXY_HOST=%q\n' "${SWARM_PROXY_HOST:-${SSH_USER}@${BASTION_PUBLIC_IP}}"
+  } > "$tmp" || { rm -f "$tmp"; return 1; }
+  chmod 600 "$tmp" || { rm -f "$tmp"; return 1; }
+  mv "$tmp" "$CACHE_FILE" || { rm -f "$tmp"; return 1; }
+  return 0
+}
+
 print_banner "Step 0: Initialize"
 
 SCRIPT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)
 PROJECT_ROOT=$(cd "$SCRIPT_DIR/../.." >/dev/null 2>&1 && pwd)
+CACHE_FILE="$SCRIPT_DIR/.setup_env_cache"
 TERRAFORM_ENVIRONMENT=${TERRAFORM_ENVIRONMENT:-production}
 TERRAFORM_DIR="$PROJECT_ROOT/src/iac/terraform/envs/$TERRAFORM_ENVIRONMENT"
+
+if attempt_cached_bootstrap; then
+  return 0
+fi
+
+if [ "$CACHE_FAILURE_REASON" = "forced" ]; then
+  echo "ℹ️  Forced refresh requested; running full setup."
+elif [ "$CACHE_FAILURE_REASON" = "invalid" ]; then
+  echo "ℹ️  Cached environment stale or inconsistent; running full setup."
+elif [ "$CACHE_FAILURE_REASON" = "load_failed" ]; then
+  echo "ℹ️  Unable to read cached environment; running full setup."
+fi
 
 if [ ! -d "$TERRAFORM_DIR" ]; then
   echo "⚠️  Terraform env dir not found: $TERRAFORM_DIR"
@@ -212,7 +367,7 @@ fi
 export SWARM_PROXY_HOST="$PROXY_TARGET"
 
 print_banner "Step 2.5: Verify SSH connectivity"
-SSH_TEST_FLAGS="-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o BatchMode=yes -o ConnectTimeout=10"
+SSH_TEST_FLAGS="$SSH_CONNECT_FLAGS"
 if ssh -i "$SSH_KEY_PATH" $SSH_TEST_FLAGS "$SSH_USER@$BASTION_PUBLIC_IP" true >/dev/null 2>&1; then
   echo "✅ Bastion SSH connectivity verified"
 else
@@ -282,5 +437,11 @@ else
 fi
 
 echo
+export SETUP_ENV_INITIALIZED=1
+
+if ! save_cache; then
+  echo "ℹ️  Unable to update cache at $CACHE_FILE"
+fi
+
 print_banner "Complete"
 echo "🎉 Environment setup complete"

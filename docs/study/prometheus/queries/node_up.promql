@@ -1,0 +1,1 @@
+(1 - avg by (instance)(rate(node_cpu_seconds_total{job="node-exporter", mode="idle"}[30s]))) * 100

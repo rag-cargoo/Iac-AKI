@@ -42,6 +42,24 @@ services:
       restart_policy:
         condition: on-failure
 
+  node_exporter:
+    image: prom/node-exporter:latest
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.sysfs=/host/sys'
+      - '--path.rootfs=/host'
+      - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
+    deploy:
+      mode: global
+      restart_policy:
+        condition: on-failure
+    networks:
+      - monitoring_net
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/host:ro
+
 configs:
   prometheus-config:
     file: ./prometheus/prometheus.yml

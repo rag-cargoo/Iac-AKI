@@ -1,0 +1,32 @@
+{
+  "title": "Node Overview",
+  "panels": [
+    {
+      "type": "stat",
+      "title": "CPU Usage",
+      "datasource": { "type": "prometheus", "uid": null },
+      "timeFrom": null,
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "(1 - avg(rate(node_cpu_seconds_total{job=\"node-exporter\", mode=\"idle\"}[30s]))) * 100"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "calcs": ["last"],
+          "fields": "",
+          "values": false
+        },
+        "orientation": "horizontal"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 4, "w": 8, "x": 0, "y": 0 }
+    }
+  ]
+}

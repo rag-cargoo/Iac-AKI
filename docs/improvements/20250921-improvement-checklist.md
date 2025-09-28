@@ -24,5 +24,6 @@
 
 ## 진행 메모
 - (예시) 2025-09-21 – 다중 매니저 지원 개선 우선순위 확인 필요. Terraform 상태/키 파일 정리 작업은 아직 미착수.
+- 2025-09-28 – `make port-forward service=<name> [local=<port>]` 타깃 구상 필요. `connect_service_tunnel.sh` 로직을 재사용해 특정 서비스의 PublishedPort를 자동 조회한 뒤 지정 로컬 포트로 SSH 터널을 여는 방식. kubectl `port-forward`와 비슷한 UX 목표. 예: `make port-forward service=monitoring_grafana local=13000` → PublishedPort(3000)를 원격으로 열고 로컬 13000을 해당 서비스에 바인딩. 자주 쓰는 서비스는 별칭(`make pf-grafana`)이나 `./run/common/port_forward.sh --service grafana --local 13000` 형태 래퍼도 고려.
 
 > 참고: 각 단계 완료 후 PR 설명이나 문서에 체크 상태를 반영하고, 위 진행 메모 섹션에 특이 사항이나 남은 작업 맥락을 간단히 남겨 두면 재시작 시 빠르게 파악할 수 있습니다.

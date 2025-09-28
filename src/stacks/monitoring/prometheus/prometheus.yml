@@ -9,3 +9,10 @@ scrape_configs:
           - 'tasks.sample_spring_app_spring_app:8080'
         labels:
           service: 'sample_spring_app'
+
+  - job_name: 'node-exporter'
+    dns_sd_configs:
+      - names:
+          - 'tasks.monitoring_node_exporter'
+        type: 'A'
+        port: 9100

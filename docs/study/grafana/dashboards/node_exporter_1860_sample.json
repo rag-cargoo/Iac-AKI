@@ -1,0 +1,60 @@
+{
+  "overwrite": false,
+  "dashboard": {
+    "title": "Node Exporter 1860 Sample",
+    "panels": [
+      {
+        "id": 999,
+        "type": "timeseries",
+        "title": "CPU Usage Sample",
+        "datasource": {
+          "type": "prometheus",
+          "uid": null
+        },
+        "targets": [
+          {
+            "refId": "A",
+            "expr": "100 - (avg by (instance)(rate(node_cpu_seconds_total{job=\"node-exporter\", mode=\"idle\"}[5m])) * 100)",
+            "legendFormat": "{{instance}}"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "percent",
+            "thresholds": {
+              "mode": "percentage",
+              "steps": [
+                { "color": "green", "value": null },
+                { "color": "red", "value": 80 }
+              ]
+            },
+            "custom": {
+              "drawStyle": "line",
+              "lineWidth": 2
+            }
+          },
+          "overrides": []
+        },
+        "gridPos": { "h": 8, "w": 24, "x": 0, "y": 0 }
+      }
+    ],
+    "templating": {
+      "list": [
+        {
+          "name": "instance",
+          "type": "query",
+          "datasource": {
+            "type": "prometheus",
+            "uid": null
+          },
+          "query": {
+            "qry": "up{job=\"node-exporter\"}",
+            "label": "instance",
+            "value": "instance"
+          },
+          "refresh": 1
+        }
+      ]
+    }
+  }
+}
