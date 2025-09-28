@@ -1,7 +1,0 @@
----
-- name: Deploy sample Spring Boot application stack
-  hosts: swarm_manager
-  become: true
-  gather_facts: false
-  roles:
-    - sample_app

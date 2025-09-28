@@ -1,99 +1,85 @@
 # Repo Layout Blueprint
 
-아래 구조는 인프라(IaC)와 서비스 애플리케이션을 한 저장소 안에서 명확히 분리해 운영하기 위한 예시입니다. 실제로 디렉터리를 모두 만들어두기보다는, 팀에서 필요한 부분부터 단계적으로 채워 넣으며 관리하면 됩니다.
+이 문서는 인프라(IaC)와 서비스 애플리케이션을 하나의 저장소에서 관리할 때 추천하는 디렉터리 구조와 운영 원칙을 정리합니다. 필요한 영역부터 점진적으로 채워 넣으면서 팀의 워크플로에 맞게 확장하세요.
 
 ```
 AWS-ANSIBLE-DockerSwarm/
-├── IAC/                                # 인프라(IaC) 전용 영역
-│   ├── terraform/                      # 네트워크·컴퓨트·보안 모듈, 환경별 디렉터리 (envs/prod 등)
-│   │   ├── modules/                    # reusable module (security, compute 등)
-│   │   └── envs/
-│   │       ├── production/
-│   │       └── staging/
-│   ├── ansible/                        # 서버/클러스터 프로비저닝 및 운영 자동화
-│   │   ├── roles/                      # docker_engine, swarm_manager, logging_agent 등 역할별 디렉터리
-│   │   ├── playbooks/
-│   │   └── inventory_plugins/
-│   └── platform/                       # 모니터링/성능 등 공통 운영 스택의 IaC (observability, performance 등)
-│       ├── observability/
-│       └── performance/
-├── services/                           # 애플리케이션 코드 영역
-│   ├── service-a/
-│   │   ├── src/
-│   │   ├── tests/
-│   │   ├── Dockerfile
-│   │   └── deploy/                     # 서비스 전용 배포 스크립트/템플릿(Helm chart, Ansible role 등)
-│   ├── service-b/
-│   └── shared-libraries/               # 공통 라이브러리 또는 SDK
-├── platform/                           # 공통 운영 컴포넌트(옵션)
-│   ├── observability/                  # SLO/SLA, 알림 템플릿, 대시보드 JSON 등
-│   ├── scripts/                        # 운영 자동화 스크립트(bin, tools, lib 등 세분화)
-│   └── makefiles/                      # 공용 Make/Task 정의
-├── env-config/                         # 환경 변수, 설정 템플릿, Vault/Parameter Store 매핑 정보
-├── docs/                               # 상위 문서(구조 가이드, 온보딩, 아키텍처 개요 등)
-└── .github/ or ci/                     # CI/CD 파이프라인 정의 파일 (GitHub Actions, GitLab CI 등)
+├── docs/                            # 설계, 온보딩, 레퍼런스 문서
+├── src/iac/                         # Terraform + Ansible 기반 IaC
+│   ├── terraform/
+│   │   ├── modules/                  # network, security, compute 등 재사용 모듈
+│   │   └── envs/<environment>/       # production, staging 등 환경별 진입점
+│   └── ansible/
+│       ├── roles/                    # docker_engine, swarm_manager, swarm_worker
+│       ├── playbooks/
+│       └── inventory_plugins/
+├── src/stacks/                     # 관찰성·로깅·성능 등 플랫폼 운영 자산
+│   ├── monitoring/
+│   ├── logging/
+│   └── performance/
+├── src/stacks/app-services/         # 서비스별 배포 매니페스트와 예제 스택
+│   └── sample-spring-app/
+├── run/                             # 실행(runbook) 및 공용 스크립트
+│   ├── common/                      # setup_env.sh, connect_service_tunnel.sh 등
+│   └── monitoring/                  # 스택별 실행 절차 (README 등)
+└── env-config/ (optional)            # 환경 변수 템플릿, Vault 매핑, Feature Flag 등
 ```
 
-> ※ 여러 리포로 쪼갤 경우에는 아래 "실무에서 자주 보이는 리포 분류 예시" 섹션의 명명 규칙을 참고해 별도 저장소로 분리해 운영하세요.
+> ※ CI/CD 정의는 조직 표준에 맞춰 `.github/`, `ci/`, `pipelines/` 등의 전용 디렉터리에 분리해 관리하세요.
 
 ## 디렉터리별 설명
-- **IAC/**: Terraform과 Ansible을 통해 VPC, EC2, 보안 그룹, 관찰성 스택 등을 코드로 관리합니다. `terraform/`, `ansible/`, `platform/`(observability/performance)으로 세분화해 환경 확장 및 DR 구성 시 유용합니다.
-- **services/**: 실제 애플리케이션 소스 코드, 테스트, 배포 매니페스트를 보관합니다. 서비스별로 독립적인 CI 파이프라인과 배포 전략을 가질 수 있습니다.
-- **env-config/**: 환경별 설정값(.env 템플릿, Vault/Secrets Manager 키 매핑, Feature Flag 정의 등)을 문서화하거나 템플릿화합니다.
-- **docs/**: 저장소 전반에 대한 가이드, 온보딩 문서, 아키텍처 다이어그램을 정리합니다.
-- **.github/** 또는 **ci/**: 저장소 레벨의 CI/CD 파이프라인 정의 파일을 모아둡니다.
-- **env-config/**: 환경별 설정값(.env 템플릿, Vault/Secrets Manager 키 매핑, Feature Flag 정의 등)을 문서화하거나 템플릿화합니다.
-- **docs/**: 저장소 전반에 대한 가이드, 온보딩 문서, 아키텍처 다이어그램을 정리합니다.
-- **.github/** 또는 **ci/**: 저장소 레벨의 CI/CD 파이프라인 정의 파일을 모아둡니다.
+- **docs/**: 리포지토리 구조, 실무 가이드, 트러블슈팅 노트를 포함한 문서 허브입니다.
+- **src/iac/**: Terraform과 Ansible을 통해 VPC, EC2, 보안 그룹, Swarm 클러스터를 코드로 관리합니다. 네트워크 → 보안 → 컴퓨트 순으로 모듈을 호출하고, Ansible은 역할 기반 구조를 유지합니다.
+- **src/stacks/**: Prometheus/Grafana, Loki/Promtail, k6 등 관찰성과 운영 도구를 저장합니다. Swarm 배포용 스택 정의와 추가 자동화 스크립트가 포함됩니다.
+- **src/stacks/app-services/**: 서비스별 스택 정의(`stack.yml`), 배포 노트북, 공통 라이브러리 등을 모읍니다. 샘플 애플리케이션을 기준으로 신규 서비스를 온보딩하세요.
+- **run/**: runbook과 공용 스크립트를 모아 실행 단계를 문서화합니다. `run/common/`에는 환경 설정, 터널링, 진단 스크립트를, `run/<service>/`에는 서비스별 실행 절차를 정리합니다.
+- **env-config/** (선택): 환경별 `.env` 템플릿과 시크릿 매핑 정보를 버전 관리합니다. AWS SSM, Secrets Manager, Vault 연동 가이드를 함께 문서화하세요.
 
 ## 운영 시 고려 사항
-1. **권한 분리**: 인프라 변경은 제한된 승인 절차를 거치고, 서비스 코드는 팀별로 자율성을 보장합니다.
-2. **CI/CD 파이프라인**: `IAC/`는 Terraform Plan → 승인 → Apply, `services/`는 Build → Test → Deploy 순으로 별도 파이프라인을 구성하면 안정적입니다.
-3. **백업/로그/모니터링**: 인프라 계층에서 공용으로 제공하면서도 서비스 팀이 쉽게 연동할 수 있도록 템플릿과 예제 플레이북을 제공하세요.
-4. **문서화**: 구조 변경 시 `docs/INFRA_SERVICE_STRUCTURE.md`와 같은 문서를 최신 상태로 유지하여 신규 기여자가 빠르게 온보딩할 수 있게 합니다.
-
-필요한 부분부터 구조를 도입한 다음, 점진적으로 세부 디렉터리를 채워 나가면 실무에서도 유지보수하기 수월한 프로젝트 형태를 갖출 수 있습니다.
-
+1. **권한 분리**: `src/iac/` 변경은 제한된 승인 절차를 거치고, `src/stacks/app-services/`는 서비스 팀이 자율적으로 관리할 수 있도록 정책을 구분합니다.
+2. **CI/CD 파이프라인**: 인프라는 Terraform Plan → 승인 → Apply, 애플리케이션은 Build → Test → Deploy 파이프라인을 별도로 구성합니다.
+3. **관찰성과 백업**: 공통 운영 스택(`src/stacks/`)을 Swarm 또는 Kubernetes에서 재사용 가능하도록 템플릿과 예제 플레이북을 제공합니다.
+4. **문서화**: 구조 변경 시 `docs/INFRA_SERVICE_STRUCTURE.md`, `docs/REAL_WORLD_STRUCTURE.md`, `AGENTS.md`를 최신 상태로 유지해 신규 기여자가 빠르게 온보딩할 수 있도록 합니다.
 
 ## 리포지토리 운영 패턴 비교
 실무에서는 조직 규모와 협업 방식에 따라 여러 저장소 모델이 혼용됩니다. 구조를 설계하기 전에 다음 패턴들의 장단점을 고려하세요.
 
 ### 1. 단일 리포 (Monorepo)
-- **구성**: 인프라(IaC), 서비스 소스, 공통 스크립트를 한 저장소에 모두 포함
-- **장점**: 프로젝트 전반을 한눈에 확인 가능, 공통 코드/문서 재사용이 쉽고 온보딩 속도가 빠름
-- **단점**: 권한 분리와 승인 프로세스를 세밀하게 제어하기 어렵고, CI/CD 파이프라인이 복잡해짐. 대규모 팀에서는 머지 충돌이 잦을 수 있음
-- **권장 사례**: 소규모 팀, 초기 MVP 또는 마이크로서비스 수가 적을 때. 인프라 변경과 서비스 배포가 한 팀에서 동시에 이뤄지는 경우
+- **구성**: 인프라(IaC), 서비스 소스, 공통 스크립트를 동일 저장소에 포함합니다.
+- **장점**: 프로젝트 자산을 한눈에 확인하고 공통 코드/문서를 쉽게 재사용할 수 있습니다.
+- **단점**: 권한 분리, 승인 프로세스, CI/CD 파이프라인이 복잡해질 수 있습니다. 대규모 팀에서는 머지 충돌이 잦습니다.
+- **권장 사례**: 소규모 팀, 초기 MVP, 인프라와 서비스가 동일한 릴리스 주기를 갖는 경우.
 
 ### 2. 다중 리포 (Multi-Repo)
-- **구성**: 인프라 전용 리포, 서비스별 리포, 공통 플랫폼 리포 등으로 분리
-- **장점**: 팀/역할별로 권한과 책임을 명확히 분리하고, 서비스별 배포 파이프라인을 독립적으로 운영 가능. 릴리스 주기가 서로 다른 시스템을 관리하기 수월함
-- **단점**: 공통 코드나 스크립트 공유가 불편하고, 각 리포에서 문서화와 규칙을 중복 관리해야 함
-- **권장 사례**: 여러 팀이 협업하거나, 서비스별 스택/릴리스 주기가 크게 다를 때. 인프라 변경 승인 절차가 엄격한 조직
+- **구성**: 인프라 전용 리포, 서비스별 리포, 공통 플랫폼 리포 등으로 분리합니다.
+- **장점**: 팀/역할별 책임을 명확히 분리하고 서비스별 배포 파이프라인을 독립적으로 운영할 수 있습니다.
+- **단점**: 공통 코드와 문서를 여러 리포에서 중복 관리해야 하며 동기화 비용이 발생합니다.
+- **권장 사례**: 여러 팀이 협업하거나 서비스별 스택/릴리스 주기가 크게 다른 조직.
 
 ### 3. 혼합형
-- **구성**: 인프라는 전용 리포에 두고, 서비스는 서비스별 리포로 분리. 공통 라이브러리/스크립트/CI 템플릿은 별도 리포 또는 패키지로 관리
-- **장점**: 인프라 통제와 서비스 자율성을 동시에 확보. 공통 자산을 버전 관리하면서 여러 리포에서 재사용 가능
-- **단점**: 리포 간 의존성 관리가 필요하며, 변경 파급을 추적하려면 문서화가 필수적
-- **권장 사례**: DevOps/플랫폼팀이 인프라를 중앙에서 관리하고, 서비스 팀이 독립적으로 배포하는 조직. GitOps, Argo CD, Spinnaker 등과 연계해 환경별 배포를 자동화할 때
+- **구성**: 인프라는 전용 리포에서 중앙 관리하고, 서비스는 서비스별 리포로 분리합니다. 공통 라이브러리/스크립트/CI 템플릿은 별도 리포 또는 패키지로 관리합니다.
+- **장점**: 인프라 통제와 서비스 자율성을 동시에 확보합니다. 공통 자산을 버전 관리하면서 여러 리포에서 재사용할 수 있습니다.
+- **단점**: 리포 간 의존성 추적이 필요하며 변경 파급을 관리하려면 문서화가 필수입니다.
+- **권장 사례**: 플랫폼팀이 인프라를 관리하고 서비스팀이 독립적으로 배포하는 조직, GitOps/Argo CD/Spinnaker 등과 연계된 환경.
 
 ### 실무에서 자주 보이는 리포 분류 예시
-- `infra-aws/`, `infra-gcp/`, `infra-monitoring/`: 클라우드별 IaC, 모니터링 등
-- `service-foo/`, `service-bar/`: 서비스별 애플리케이션 코드
+- `infra-aws/`, `infra-gcp/`, `infra-monitoring/`: 클라우드별 IaC, 모니터링·보안 인프라
+- `service-foo/`, `service-bar/`: 서비스별 애플리케이션 코드와 배포 정의
 - `platform-observability/`: Grafana 대시보드 JSON, Alert 규칙, Runbook
 - `devops-pipelines/`: Jenkinsfile, GitHub Actions, Argo CD 애플리케이션 정의 등
 - `shared-libs/`: 회사 공통 SDK, 파이썬/노드 패키지, CICD 스텝 공유 코드
 
-필요한 저장소만 선택해 운영하면서도 문서(`docs/`)에 리포 간 관계와 책임 범위를 명확히 기록하는 것이 중요합니다.
+필요한 저장소만 선택하되 `docs/`에 리포 간 관계와 책임 범위를 문서화하여 거버넌스를 명확히 하세요.
 
 ## 현재 프로젝트 전환 체크리스트
-> 아래 단계는 현 리포지토리를 위 구조로 확장할 때 참고할 수 있는 TODO 목록입니다. 완료한 항목은 체크 표시(✓)로 업데이트해 진행 상황을 관리하세요.
+> 아래 단계는 현 리포지토리를 상기 구조로 확장할 때 참고할 수 있는 TODO 목록입니다. 완료한 항목은 체크 표시(✓)로 업데이트해 진행 상황을 관리하세요.
 
-- [ ] 최상위에 `infra/`, `services/`, `platform/`, `env-config/` 디렉터리 스켈레톤 생성
-- [ ] 기존 `Iac/` 내용을 `IAC/terraform/` 및 `IAC/ansible/`로 이동하고 경로/스크립트 업데이트
-- [ ] 모니터링, 로깅, 백업 등 추가 인프라 스택을 `infra/monitoring/`, `infra/logging/` 등에 분리 배치
-- [ ] 서비스 애플리케이션 코드를 `services/<service-name>/` 구조에 맞춰 분리하고 배포 매니페스트 정리
-- [ ] 공통 스크립트와 자동화 도구를 `platform/scripts/` 혹은 패키지 리포로 이동
-- [ ] 환경별 설정 템플릿과 시크릿 매핑을 `env-config/`에 정리하고 문서화
-- [ ] CI/CD 파이프라인 정의를 `.github/`(또는 `ci/`)로 이동하고 인프라/서비스 파이프라인을 분리
-- [ ] `docs/INFRA_SERVICE_STRUCTURE.md`와 `AGENTS.md`에 구조 변경 내역을 반영하고 온보딩 가이드 갱신
-- [ ] Terraform에서 AWS Network Firewall + Firewall Manager 같은 고급 방화벽 정책을 토글(`firewall_enabled` 변수)로 끄고 켤 수 있도록 설계 보완
+- [ ] `docs/` 문서를 최신 구조에 맞춰 정비하고 온보딩 자료를 통합
+- [ ] `src/iac/terraform/` 모듈을 네트워크 → 보안 → 컴퓨트 순으로 호출하도록 검증
+- [ ] `src/iac/ansible/` 플레이북과 `run/common/` 실행 스크립트 경로를 일치시킵니다.
+- [ ] `src/stacks/`에 모니터링·로깅·성능 스택을 분리 배치하고 Swarm 배포 가이드를 추가
+- [ ] `src/stacks/app-services/`에 서비스별 스택/노트북을 정리하고 배포 워크플로를 문서화
+- [ ] `run/<service>/README.md`와 같은 실행 가이드에서 `run/common/setup_env.sh` 호출 여부를 검증
+- [ ] 환경별 변수/시크릿 템플릿을 `env-config/` 또는 Parameter Store/Vault로 이동
+- [ ] CI/CD 파이프라인 정의를 `.github/`(또는 `ci/`)로 이동하고 IaC·서비스 파이프라인을 분리
+- [ ] Terraform에서 AWS Network Firewall/Firewall Manager 토글을 모듈 변수(`firewall_enabled`)로 추상화

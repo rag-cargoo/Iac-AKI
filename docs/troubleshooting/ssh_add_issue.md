@@ -2,7 +2,7 @@
 
 ## 문제 증상
 
-`scripts/bin/setup_project_env.sh` 또는 이 스크립트를 소싱하는 다른 연결 스크립트(예: `scripts/bin/connect_service_tunnel.sh`)를 실행할 때, `ssh-agent`는 성공적으로 시작되지만 `ssh-add` 명령에서 다음 오류와 함께 실패함:
+`run/common/setup_env.sh` 또는 이 스크립트를 소싱하는 다른 연결 스크립트(예: `run/common/connect_service_tunnel.sh`)를 실행할 때, `ssh-agent`는 성공적으로 시작되지만 `ssh-add` 명령에서 다음 오류와 함께 실패함:
 
 ```
 ❌ ERROR: Failed to add SSH key to agent. Check key path and permissions. Cannot proceed.
@@ -28,26 +28,26 @@
 
 4.  **`~` (틸드) 경로 확장 문제:**
     *   스크립트 내에서 `"${SSH_KEY_PATH}"` 경로가 `ssh-add`에 전달될 때 `~`가 제대로 확장되지 않을 가능성 제기.
-    *   **시도:** `setup_project_env.sh` 내 `SSH_KEY_PATH`를 절대 경로(`$HOME/.aws/key/test_key.pem`)로 명시적으로 변경.
+    *   **시도:** `run/common/setup_env.sh` 내 `SSH_KEY_PATH`를 절대 경로(`$HOME/.aws/key/test_key.pem`)로 명시적으로 변경.
     *   **결과:** 문제 해결되지 않음.
 
 5.  **`ssh-add` 명령의 견고성 강화:**
-    *   `setup_project_env.sh` 내 `ssh-add` 호출 시 `2>/dev/null`을 추가하고, 실패 시 `exit 1` 대신 경고만 출력하도록 변경.
+    *   `run/common/setup_env.sh` 내 `ssh-add` 호출 시 `2>/dev/null`을 추가하고, 실패 시 `exit 1` 대신 경고만 출력하도록 변경.
     *   **결과:** `ssh-add`는 여전히 실패하지만 스크립트가 종료되지 않고 계속 진행됨. (하지만 키가 로드되지 않아 SSH 연결은 여전히 불가).
 
 6.  **Ansible `--private-key` 옵션 사용 시도:**
     *   `ansible-playbook` 실행 시 `ssh-agent` 의존성을 제거하기 위해 `--private-key="${SSH_KEY_PATH}"` 옵션 사용 제안.
-    *   **결과:** `setup_project_env.sh` 스크립트가 `ssh-add`에서 실패하여 스크립트가 종료되므로 플레이북 실행 자체가 불가. (이후 `ssh-add` 실패를 경고로 변경하여 플레이북 실행은 가능해졌으나, 여전히 키 로드 문제는 남음).
+    *   **결과:** `run/common/setup_env.sh` 스크립트가 `ssh-add`에서 실패하여 스크립트가 종료되므로 플레이북 실행 자체가 불가. (이후 `ssh-add` 실패를 경고로 변경하여 플레이북 실행은 가능해졌으나, 여전히 키 로드 문제는 남음).
 
 ## Makefile의 역할
 
-`Makefile`은 `setup_project_env.sh` 스크립트 실행과 `ansible-playbook` 실행을 하나의 명령으로 통합하여 환경 변수 전달 문제를 해결했습니다. 하지만 `Makefile` 자체는 `ssh-add` 명령이 스크립트 내에서 실패하는 근본적인 문제를 해결하지는 못했습니다. `ssh-add` 실패 시 스크립트가 종료되지 않도록 우회하는 역할만 수행합니다.
+`Makefile`은 `run/common/setup_env.sh` 스크립트 실행과 `ansible-playbook` 실행을 하나의 명령으로 통합하여 환경 변수 전달 문제를 해결했습니다. 하지만 `Makefile` 자체는 `ssh-add` 명령이 스크립트 내에서 실패하는 근본적인 문제를 해결하지는 못했습니다. `ssh-add` 실패 시 스크립트가 종료되지 않도록 우회하는 역할만 수행합니다.
 
 ## 현재 상태 및 해결 방법
 
-`scripts/bin/setup_project_env.sh` 스크립트와 `Makefile`의 개선을 통해 `ssh-agent` 시작 및 SSH 키 추가 과정이 더욱 견고해졌습니다.
+`run/common/setup_env.sh` 스크립트와 `Makefile`의 개선을 통해 `ssh-agent` 시작 및 SSH 키 추가 과정이 더욱 견고해졌습니다.
 
-`Makefile`의 `run` 타겟을 실행하면 `setup_project_env.sh`가 자동으로 소싱되어 필요한 환경 변수 설정, `~/.ssh/config` 업데이트, 그리고 `ssh-agent` 시작 및 SSH 키 추가를 시도합니다.
+`Makefile`의 `run` 타겟을 실행하면 `run/common/setup_env.sh`가 자동으로 소싱되어 필요한 환경 변수 설정, `~/.ssh/config` 업데이트, 그리고 `ssh-agent` 시작 및 SSH 키 추가를 시도합니다.
 
 대부분의 환경에서 이 과정은 자동으로 성공합니다.
 
@@ -59,7 +59,7 @@ Ansible 플레이북이나 SSH 연결 스크립트를 실행하기 전에 다음
 
 ```bash
 eval "$(ssh-agent -s)"
-ssh-add "${SSH_KEY_PATH}" # SSH_KEY_PATH는 setup_project_env.sh 실행 시 설정됩니다.
+ssh-add "${SSH_KEY_PATH}" # SSH_KEY_PATH는 run/common/setup_env.sh 실행 시 설정됩니다.
 ```
 
 `ssh-add` 명령 실행 시 `Identity added:` 메시지가 나타나면 성공적으로 키가 추가된 것입니다.

@@ -1,0 +1,29 @@
+version: '3.8'
+services:
+  spring_app:
+    image: springio/gs-spring-boot-docker:latest
+    ports:
+      - target: 8080
+        published: 9000
+        protocol: tcp
+        mode: host
+    environment:
+      SPRING_PROFILES_ACTIVE: default
+    deploy:
+      replicas: 2
+      restart_policy:
+        condition: on-failure
+      update_config:
+        parallelism: 1
+        delay: 10s
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    networks:
+      - swarm_services
+
+networks:
+  swarm_services:
+    external: true
