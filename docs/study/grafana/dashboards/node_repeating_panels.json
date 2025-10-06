@@ -1,0 +1,419 @@
+{
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "id": 0,
+  "links": [],
+  "panels": [
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "ef021fuadpfk0e"
+      },
+      "description": "Overall CPU busy percentage (averaged across all cores)",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "decimals": 1,
+          "mappings": [
+            {
+              "options": {
+                "match": "null",
+                "result": {
+                  "text": "N/A"
+                }
+              },
+              "type": "special"
+            }
+          ],
+          "max": 100,
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "rgba(50, 172, 45, 0.97)",
+                "value": 0
+              },
+              {
+                "color": "rgba(237, 129, 40, 0.89)",
+                "value": 85
+              },
+              {
+                "color": "rgba(245, 54, 54, 0.9)",
+                "value": 95
+              }
+            ]
+          },
+          "unit": "percent"
+        },
+        "overrides": [
+          {
+            "__systemRef": "hideSeriesFrom",
+            "matcher": {
+              "id": "byNames",
+              "options": {
+                "mode": "exclude",
+                "names": [
+                  "{instance=\"10.0.1.8:9100\", metric=\"CPU Busy (%)\"}"
+                ],
+                "prefix": "All except:",
+                "readOnly": true
+              }
+            },
+            "properties": []
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 20,
+        "x": 0,
+        "y": 0
+      },
+      "id": 2,
+      "options": {
+        "displayMode": "gradient",
+        "legend": {
+          "calcs": [
+            "last"
+          ],
+          "displayMode": "list",
+          "placement": "right",
+          "showLegend": true
+        },
+        "maxVizHeight": 300,
+        "minVizHeight": 16,
+        "minVizWidth": 0,
+        "namePlacement": "auto",
+        "orientation": "vertical",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showUnfilled": true,
+        "sizing": "auto",
+        "valueMode": "color"
+      },
+      "pluginVersion": "12.2.0",
+      "targets": [
+        {
+          "editorMode": "code",
+          "exemplar": false,
+          "expr": "  label_replace(\r\n    100 * (1 - avg by (instance)(\r\n      rate(node_cpu_seconds_total{mode=\"idle\", instance=~\"$node\"}[$__rate_interval])\r\n    )),\r\n    \"metric\", \"CPU Busy (%)\", \"instance\", \".*\"\r\n  )",
+          "instant": true,
+          "legendFormat": "",
+          "range": false,
+          "refId": "A",
+          "step": 240
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "ef021fuadpfk0e"
+          },
+          "editorMode": "code",
+          "expr": "  label_replace(\r\n    100 * (\r\n      1 - avg by (instance) (\r\n        node_memory_MemAvailable_bytes{instance=~\"$node\"}\r\n          / node_memory_MemTotal_bytes{instance=~\"$node\"}\r\n      )\r\n    ),\r\n    \"metric\", \"Memory Used (%)\", \"instance\", \".*\"\r\n  )",
+          "hide": false,
+          "instant": false,
+          "legendFormat": "__auto",
+          "range": true,
+          "refId": "B"
+        }
+      ],
+      "title": "CPU Busy",
+      "type": "bargauge"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "ef021fuadpfk0e"
+      },
+      "description": "Overall CPU busy percentage (averaged across all cores)",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "decimals": 1,
+          "mappings": [
+            {
+              "options": {
+                "match": "null",
+                "result": {
+                  "text": "N/A"
+                }
+              },
+              "type": "special"
+            }
+          ],
+          "max": 100,
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "rgba(50, 172, 45, 0.97)",
+                "value": 0
+              },
+              {
+                "color": "rgba(237, 129, 40, 0.89)",
+                "value": 85
+              },
+              {
+                "color": "rgba(245, 54, 54, 0.9)",
+                "value": 95
+              }
+            ]
+          },
+          "unit": "percent"
+        },
+        "overrides": [
+          {
+            "__systemRef": "hideSeriesFrom",
+            "matcher": {
+              "id": "byNames",
+              "options": {
+                "mode": "exclude",
+                "names": [
+                  "{instance=\"10.0.1.8:9100\", metric=\"CPU Busy (%)\"}"
+                ],
+                "prefix": "All except:",
+                "readOnly": true
+              }
+            },
+            "properties": []
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 20,
+        "x": 0,
+        "y": 8
+      },
+      "id": 3,
+      "options": {
+        "displayMode": "gradient",
+        "legend": {
+          "calcs": [
+            "last"
+          ],
+          "displayMode": "list",
+          "placement": "right",
+          "showLegend": true
+        },
+        "maxVizHeight": 300,
+        "minVizHeight": 16,
+        "minVizWidth": 0,
+        "namePlacement": "auto",
+        "orientation": "vertical",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showUnfilled": true,
+        "sizing": "auto",
+        "valueMode": "color"
+      },
+      "pluginVersion": "12.2.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "ef021fuadpfk0e"
+          },
+          "editorMode": "code",
+          "expr": "  (\r\n    label_replace(\r\n      100 * (\r\n        1 - avg by (instance) (\r\n          rate(node_cpu_seconds_total{mode=\"idle\", instance=~\"$node\"}[$__rate_interval])\r\n        )\r\n      ),\r\n      \"metric\", \"CPU Busy (%)\", \"instance\", \".*\"\r\n    )\r\n  )\r\n  or\r\n  (\r\n    label_replace(\r\n      100 * (\r\n        1 - avg by (instance) (\r\n          node_memory_MemAvailable_bytes{instance=~\"$node\"}\r\n            / node_memory_MemTotal_bytes{instance=~\"$node\"}\r\n        )\r\n      ),\r\n      \"metric\", \"Memory Used (%)\", \"instance\", \".*\"\r\n    )\r\n  )\r\n  or\r\n  (\r\n    label_replace(\r\n      100 * sum by (instance) (\r\n        rate(node_disk_io_time_seconds_total{instance=~\"$node\"}[$__rate_interval])\r\n      ),\r\n      \"metric\", \"Disk IO Busy (%)\", \"instance\", \".*\"\r\n    )\r\n  )",
+          "hide": false,
+          "instant": false,
+          "legendFormat": "__auto",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "CPU Busy",
+      "type": "bargauge"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "ef021fuadpfk0e"
+      },
+      "description": "Overall CPU busy percentage (averaged across all cores)",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "decimals": 1,
+          "mappings": [
+            {
+              "options": {
+                "match": "null",
+                "result": {
+                  "text": "N/A"
+                }
+              },
+              "type": "special"
+            }
+          ],
+          "max": 100,
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "rgba(50, 172, 45, 0.97)",
+                "value": 0
+              },
+              {
+                "color": "rgba(237, 129, 40, 0.89)",
+                "value": 85
+              },
+              {
+                "color": "rgba(245, 54, 54, 0.9)",
+                "value": 95
+              }
+            ]
+          },
+          "unit": "percent"
+        },
+        "overrides": [
+          {
+            "__systemRef": "hideSeriesFrom",
+            "matcher": {
+              "id": "byNames",
+              "options": {
+                "mode": "exclude",
+                "names": [
+                  "{instance=\"10.0.1.8:9100\", metric=\"CPU Busy (%)\"}"
+                ],
+                "prefix": "All except:",
+                "readOnly": true
+              }
+            },
+            "properties": []
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 8,
+        "x": 0,
+        "y": 16
+      },
+      "id": 4,
+      "maxPerRow": 12,
+      "options": {
+        "displayMode": "gradient",
+        "legend": {
+          "calcs": [
+            "last"
+          ],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "maxVizHeight": 300,
+        "minVizHeight": 16,
+        "minVizWidth": 0,
+        "namePlacement": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showUnfilled": true,
+        "sizing": "auto",
+        "valueMode": "color"
+      },
+      "pluginVersion": "12.2.0",
+      "repeat": "node",
+      "repeatDirection": "v",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "ef021fuadpfk0e"
+          },
+          "editorMode": "code",
+          "expr": "    (\r\n      label_replace(\r\n        100 * (\r\n          1 - avg by (instance) (\r\n            rate(node_cpu_seconds_total{mode=\"idle\", instance=~\"$node\"}[$__rate_interval])\r\n          )\r\n        ),\r\n        \"metric\", \"CPU Busy (%)\", \"instance\", \".*\"\r\n      )\r\n    )\r\n    or\r\n    (\r\n      label_replace(\r\n        100 * (\r\n          1 - avg by (instance) (\r\n            node_memory_MemAvailable_bytes{instance=~\"$node\"}\r\n              / node_memory_MemTotal_bytes{instance=~\"$node\"}\r\n          )\r\n        ),\r\n        \"metric\", \"Memory Used (%)\", \"instance\", \".*\"\r\n      )\r\n    )\r\n    or\r\n    (\r\n      label_replace(\r\n        100 * sum by (instance) (\r\n          rate(node_disk_io_time_seconds_total{instance=~\"$node\"}[$__rate_interval])\r\n        ),\r\n        \"metric\", \"Disk IO Busy (%)\", \"instance\", \".*\"\r\n      )\r\n    )",
+          "hide": false,
+          "instant": false,
+          "legendFormat": "__auto",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "$node",
+      "type": "bargauge"
+    }
+  ],
+  "preload": false,
+  "schemaVersion": 42,
+  "tags": [],
+  "templating": {
+    "list": [
+      {
+        "allValue": "",
+        "allowCustomValue": false,
+        "current": {
+          "text": "All",
+          "value": [
+            "$__all"
+          ]
+        },
+        "definition": "label_values(up,instance)",
+        "includeAll": true,
+        "multi": true,
+        "name": "node",
+        "options": [],
+        "query": {
+          "qryType": 1,
+          "query": "label_values(up,instance)",
+          "refId": "PrometheusVariableQueryEditor-VariableQuery"
+        },
+        "refresh": 1,
+        "regex": "",
+        "type": "query"
+      }
+    ]
+  },
+  "time": {
+    "from": "now-5m",
+    "to": "now"
+  },
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "New dashboard",
+  "uid": "adw6bmj",
+  "version": 16
+}

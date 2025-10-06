@@ -132,4 +132,4 @@ ansible:
 | 반복 실행 번거로움      | Makefile 통합 실행                           | 해결 |
 | Docker CLI 호스트 키 검증 실패 | `setup_env.sh`에서 SSH 옵션 강화, `StrictHostKeyChecking no` 설정 | 해결 |
 
-> Docker CLI 관련 상세 원인은 `docs/troubleshooting/docker_host_key_verification.md` 참고.
+> SSH fingerprint 및 known_hosts 자동화 전반은 `docs/troubleshooting/ssh_error_known_hosts.md`에서 최신 내용을 확인하세요. Docker CLI 전용 체크 포인트는 `docs/troubleshooting/docker_host_key_verification.md`에 정리돼 있습니다.
