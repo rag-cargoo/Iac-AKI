@@ -1,98 +1,87 @@
 SHELL := /bin/bash
 
+.DEFAULT_GOAL := help
 
-.DEFAULT_GOAL := run
+LAB01_PREFIX := 01-lab-docker-swarm
+LAB01_DIR := labs/$(LAB01_PREFIX)
 
-SETUP_SCRIPT=./run/common/setup_env.sh
-CONNECT_SCRIPT=./run/common/connect_service_tunnel.sh
-TF_ENV_DIR?=src/iac/terraform/envs/production
-SETUP_ENV_FORCE?=
-ANSIBLE_ENV=ANSIBLE_LOCAL_TMP=/tmp/ansible-local-$(shell whoami) ANSIBLE_REMOTE_TMP=/tmp ANSIBLE_HOST_KEY_CHECKING=False ANSIBLE_SSH_ARGS="-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
-ANSIBLE_PLAYBOOK=src/iac/ansible/playbooks/cluster.yml
-ANSIBLE_CFG=src/iac/ansible/ansible.cfg
-ANSIBLE_CONFIG_CMD=ANSIBLE_CONFIG=$(CURDIR)/$(ANSIBLE_CFG)
+LAB02_PREFIX := 02-lab-s2svpn
+LAB02_DIR := labs/$(LAB02_PREFIX)
 
-.PHONY: run setup_env setup_env_refresh ansible clean tunnel \
-        tf-init tf-plan tf-apply tf-destroy \
-        monitoring_deploy monitoring_remove
+.PHONY: help \
+        $(LAB01_PREFIX)-% $(LAB02_PREFIX)-% \
+        $(LAB01_PREFIX)-init $(LAB01_PREFIX)-run $(LAB01_PREFIX)-tf-destroy \
+        $(LAB01_PREFIX)-tf-plan $(LAB01_PREFIX)-tf-apply \
+        $(LAB01_PREFIX)-setup_env $(LAB01_PREFIX)-tunnel \
+        $(LAB01_PREFIX)-monitoring_deploy $(LAB01_PREFIX)-monitoring_remove \
+        $(LAB02_PREFIX)-init $(LAB02_PREFIX)-tf-plan $(LAB02_PREFIX)-tf-apply $(LAB02_PREFIX)-tf-output $(LAB02_PREFIX)-tf-destroy $(LAB02_PREFIX)-strongswan
 
-# Run full setup + Ansible
+help:
+	@echo "Available targets:"
+	@echo "  make $(LAB01_PREFIX)-init             # Terraform init (one-time)"
+	@echo "  make $(LAB01_PREFIX)-run              # Plan → Apply → Ansible"
+	@echo "  make $(LAB01_PREFIX)-tf-destroy       # Terraform destroy"
+	@echo "  make $(LAB01_PREFIX)-tf-plan          # Terraform plan"
+	@echo "  make $(LAB01_PREFIX)-tf-apply         # Terraform apply"
+	@echo "  make $(LAB01_PREFIX)-setup_env        # Source setup_env only"
+	@echo "  make $(LAB01_PREFIX)-tunnel           # Open service tunnels"
+	@echo "  make $(LAB01_PREFIX)-monitoring_deploy # Deploy monitoring stack"
+	@echo "  make $(LAB01_PREFIX)-monitoring_remove # Remove monitoring stack"
+	@echo "  make $(LAB02_PREFIX)-init             # Terraform init (one-time)"
+	@echo "  make $(LAB02_PREFIX)-tf-plan          # Terraform plan"
+	@echo "  make $(LAB02_PREFIX)-tf-apply         # Terraform apply"
+	@echo "  make $(LAB02_PREFIX)-tf-output        # Terraform output"
+	@echo "  make $(LAB02_PREFIX)-tf-destroy       # Terraform destroy"
+	@echo "  make $(LAB02_PREFIX)-strongswan       # Install strongSwan locally (Ansible)"
 
-ANSIBLE_FORKS ?= 
+$(LAB01_PREFIX)-init:
+	@$(MAKE) -C $(LAB01_DIR) tf-init
 
-run:
-	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-	@echo "🔹 Running project environment setup + Ansible..."
-	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-	@SETUP_ENV_FORCE=$(SETUP_ENV_FORCE) $(ANSIBLE_ENV) $(ANSIBLE_CONFIG_CMD) bash -c "source $(SETUP_SCRIPT) && ansible-playbook $(if $(ANSIBLE_FORKS),-f $(ANSIBLE_FORKS),) $(ANSIBLE_PLAYBOOK)"
+$(LAB01_PREFIX)-run:
+	@$(MAKE) -C $(LAB01_DIR) workflow
 
-# Setup environment only
-setup_env:
-	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-	@echo "🔹 Running project environment setup..."
-	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-	@SETUP_ENV_FORCE=$(SETUP_ENV_FORCE) bash -c "source $(SETUP_SCRIPT)"
+$(LAB01_PREFIX)-tf-destroy:
+	@$(MAKE) -C $(LAB01_DIR) destroy
 
-setup_env_refresh:
-	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-	@echo "🔹 Refreshing project environment setup..."
-	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-	@SETUP_ENV_FORCE=1 bash -c "source $(SETUP_SCRIPT)"
+$(LAB01_PREFIX)-tf-plan:
+	@$(MAKE) -C $(LAB01_DIR) tf-plan
 
-# Run Ansible playbook only
-ansible:
-	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-	@echo "🔹 Running Ansible playbook..."
-	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-	@SETUP_ENV_FORCE=$(SETUP_ENV_FORCE) $(ANSIBLE_ENV) $(ANSIBLE_CONFIG_CMD) bash -c "source $(SETUP_SCRIPT) && ansible-playbook $(if $(ANSIBLE_FORKS),-f $(ANSIBLE_FORKS),) $(ANSIBLE_PLAYBOOK)"
+$(LAB01_PREFIX)-tf-apply:
+	@$(MAKE) -C $(LAB01_DIR) tf-apply
 
-# Clean
-clean:
-	@echo "Cleaning temporary files..."
-	@rm -f ~/.ssh/config.bak
-	@echo "Done."
+$(LAB01_PREFIX)-setup_env:
+	@$(MAKE) -C $(LAB01_DIR) setup_env
 
-# SSH tunnel helper
-tunnel:
-	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-	@echo "🔹 Preparing environment + opening tunnels..."
-	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-	@SETUP_ENV_FORCE=$(SETUP_ENV_FORCE) bash -c "source $(SETUP_SCRIPT) && $(CONNECT_SCRIPT)"
+$(LAB01_PREFIX)-tunnel:
+	@$(MAKE) -C $(LAB01_DIR) tunnel
 
-monitoring_deploy:
-	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-	@echo "🔹 Deploying monitoring stack (Prometheus + Grafana + Node Exporter)..."
-	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-	@docker network create --driver overlay monitoring_net >/dev/null 2>&1 || true
-	@docker stack deploy -c src/stacks/monitoring/stack.yml monitoring
+$(LAB01_PREFIX)-monitoring_deploy:
+	@$(MAKE) -C $(LAB01_DIR) monitoring_deploy
 
-monitoring_remove:
-	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-	@echo "🔹 Removing monitoring stack..."
-	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-	@docker stack rm monitoring
+$(LAB01_PREFIX)-monitoring_remove:
+	@$(MAKE) -C $(LAB01_DIR) monitoring_remove
 
-# Terraform helpers (default: production env)
-tf-init:
-	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-	@echo "🔹 Terraform init ($(TF_ENV_DIR))"
-	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-	@terraform -chdir=$(TF_ENV_DIR) init -upgrade
+# pattern fallback for any new sub-targets
+$(LAB01_PREFIX)-%:
+	@$(MAKE) -C $(LAB01_DIR) $*
 
-tf-plan:
-	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-	@echo "🔹 Terraform plan ($(TF_ENV_DIR))"
-	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-	@terraform -chdir=$(TF_ENV_DIR) plan
+$(LAB02_PREFIX)-init:
+	@$(MAKE) -C $(LAB02_DIR) tf-init
 
-tf-apply:
-	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-	@echo "🔹 Terraform apply ($(TF_ENV_DIR))"
-	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-	@terraform -chdir=$(TF_ENV_DIR) apply
+$(LAB02_PREFIX)-tf-plan:
+	@$(MAKE) -C $(LAB02_DIR) tf-plan
 
-tf-destroy:
-	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-	@echo "🔹 Terraform destroy ($(TF_ENV_DIR))"
-	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-	@terraform -chdir=$(TF_ENV_DIR) destroy
+$(LAB02_PREFIX)-tf-apply:
+	@$(MAKE) -C $(LAB02_DIR) tf-apply
+
+$(LAB02_PREFIX)-tf-output:
+	@$(MAKE) -C $(LAB02_DIR) tf-output
+
+$(LAB02_PREFIX)-tf-destroy:
+	@$(MAKE) -C $(LAB02_DIR) tf-destroy
+
+$(LAB02_PREFIX)-strongswan:
+	@ANSIBLE_STDOUT_CALLBACK= yaml ansible-playbook labs/$(LAB02_PREFIX)/src/ansible/install_strongswan.yml $(ANSIBLE_FLAGS)
+
+$(LAB02_PREFIX)-%:
+	@$(MAKE) -C $(LAB02_DIR) $*

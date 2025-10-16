@@ -1,87 +1,46 @@
-# 프로젝트: AWS Ansible Docker Swarm
+# 프로젝트: AWS · Ansible · Docker Swarm Labs
 
 ## 1. 프로젝트 목표
-Terraform을 사용하여 AWS 인프라를 구축하고, Ansible을 사용하여 Docker Swarm 클러스터를 자동 구성 및 배포하는 것을 목표로 합니다.  
-최종적으로 컨테이너화된 애플리케이션을 배포할 수 있는 Swarm 환경을 구축합니다.
+- AWS 상에 Docker Swarm 클러스터를 자동화하여 실습 기반으로 학습한다.
+- Terraform으로 네트워크/보안/컴퓨트 리소스를 프로비저닝하고, Ansible로 Swarm을 구성한다.
+- Runbook과 스크립트를 통해 SSH, 터널링, 모니터링 배포까지 한 번에 진행할 수 있는 워크플로를 정립한다.
 
----
+## 2. 현재 진행 상태 (01-lab-docker-swarm)
+- Terraform
+  - `labs/01-lab-docker-swarm/src/terraform/envs/production/`에서 VPC, 보안 그룹, EC2(bastion/manager/worker) 생성.
+  - 로컬 상태(`terraform.tfstate`)만 사용하며 실습 종료 시 삭제 예정.
+- Ansible
+  - `src/ansible/playbooks/cluster.yml` + `tasks/` 조합으로 Docker Engine 설치 → Swarm 초기화 → 워커 조인.
+  - 동적 인벤토리: `src/ansible/inventory_plugins/swarm.py` (Terraform output 기반).
+- Runbook
+  - `labs/01-lab-docker-swarm/src/run/common/setup_env.sh`가 SSH config, known_hosts, Docker 컨텍스트를 자동 구성.
+  - `labs/01-lab-docker-swarm/src/run/common/connect_service_tunnel.sh`로 PublishedPort 터널링 지원.
+  - `labs/01-lab-docker-swarm/src/run/monitoring/README.md` + `labs/01-lab-docker-swarm/src/run/stacks/monitoring/stack.yml`로 Prometheus/Grafana 배포 가능.
 
-## 2. 인프라 구성 (Terraform)
-Terraform을 통해 다음 리소스를 생성했습니다:
+## 3. 실행 흐름 요약
+1. `make 01-lab-docker-swarm-init`
+2. `make 01-lab-docker-swarm-run` (내부적으로 `tf-plan → tf-apply → ansible` 순으로 실행)
+3. `ssh swarm-manager`에서 `docker node ls`, `docker service ls`
+4. (옵션) `make 01-lab-docker-swarm-monitoring_deploy`
+5. 종료 시 `make 01-lab-docker-swarm-monitoring_remove` 후 `make 01-lab-docker-swarm-tf-destroy`
 
-- VPC, Subnet, Gateway 등 네트워크 환경
-- EC2 인스턴스: Bastion, Manager, Worker (동적 확장 가능)
-- 보안 그룹
+루트에서는 `make 01-lab-docker-swarm-run`으로 전체 워크플로를, `make 01-lab-docker-swarm-tf-destroy`로 정리를 호출할 수 있다. 필요 시 `make 01-lab-docker-swarm-tf-plan` / `...-tf-apply`를 별도로 실행한다.
 
-Terraform output으로 필요한 정보(호스트 IP, SSH 키 경로 등)를 자동으로 추출하도록 구성했습니다.
+## 4. 트러블슈팅 기록
+- SSH host key 충돌 → `setup_env.sh`에서 `ssh-keygen -R`, `ssh-keyscan` 자동화로 해결.
+- Docker 컨텍스트 전환 → `setup_env.sh`에서 `docker context use swarm-manager` 처리.
+- Terraform output 불일치 → `labs/01-lab-docker-swarm/src/run/common/diagnose_env.sh` 추가로 TF/Ansible 상태 점검 가능.
 
----
+## 5. 향후 계획
+- [ ] `docs/improvements/20250921-improvement-checklist.md` 항목 진행 (다중 매니저, SSH 강화 등)
+- [ ] Terraform tfvars 샘플(.example) 정리 및 민감 정보 제거 자동화
+- [ ] 모니터링 Runbook 확장 (`make monitoring_logs`, alerting 등)
+- [ ] 추가 실습(`lab02-...`) 설계 시 템플릿 복제 및 루트 Makefile 타깃 확장
 
-## 3. 서버 구성 및 클러스터 구축 (Ansible)
+## 6. 문서 업데이트 필요 시 확인 항목
+- `README.md`, `labs/01-lab-docker-swarm/README.md`
+- `docs/INFRA_SERVICE_STRUCTURE.md`
+- `AGENTS.md`
+- `docs/improvements/` 체크리스트 및 진행 메모
 
-### 3.1 환경 변수 및 SSH 설정
-- `run/common/setup_env.sh` 스크립트에서 Terraform output을 읽어 다음을 자동 설정:
-  - `BASTION_PUBLIC_IP`, `MANAGER_PRIVATE_IP`, `WORKER_PRIVATE_IPS`, `SSH_KEY_PATH` 환경 변수
-  - `~/.ssh/config` 자동 갱신 (Bastion, Manager, Worker 노드)
-  - SSH agent 실행 및 키 추가
-  - `known_hosts` 자동 등록
-- SSH 접속 관련 트러블슈팅:
-  - 매번 새 EC2 인스턴스가 생기면서 host key 충돌 발생 → `ssh-keygen -R <IP>` 자동 실행으로 해결
-  - 핑거프린트 경고는 수동 확인 없이 `ssh-keyscan`으로 known_hosts 업데이트
-
-- Ansible은 `inventory_plugins/swarm.py` 스크립트를 호출하는 `inventory/production/swarm.yml`을 사용해 Terraform output 기반으로 호스트와 각 노드별 변수를 동적으로 불러옵니다
-  - SSH 접속 정보는 `~/.ssh/config`에서 처리
-  - 플레이북 실행 시 자동으로 최신 호스트 정보 반영
-- ansible.cfg 설정:
-  - `inventory = inventory/production/swarm.yml`
-  - `host_key_checking = False`
-  - `remote_user = ubuntu`
-  - `collections_paths = /home/aki/.ansible/collections`
-  - `[inventory] enable_plugins = script`
-
-### 3.3 Docker 설치 및 Swarm 구성
-- 모든 노드에 Docker Engine 설치
-- Manager 노드 초기화 후 Worker 노드 조인
-- 테스트용 Nginx 배포로 클러스터 동작 확인
-
----
-
-## 4. 프로젝트 구조 (중요 스크립트)
-- `run/common/setup_env.sh`: 환경 변수, SSH 설정, SSH agent, known_hosts 초기화
-- `src/iac/ansible/inventory_plugins/swarm.py`: Ansible 동적 인벤토리 제공 (필수)
-- Makefile: `make run`으로 환경 초기화 + Ansible 플레이북 실행 자동화
-- 삭제 가능/중복 스크립트:
-  - `connect_manager.sh`, `run_env.sh` 등 (SSH 접속은 `ssh swarm-manager` 또는 Ansible에서 자동 처리 가능)
-
----
-
-## 5. 트러블슈팅 및 해결 과정
-1. SSH 접속 문제
-   - 원인: 매번 새 EC2 인스턴스 생성 → known_hosts 충돌
-   - 해결: `run/common/setup_env.sh`에서 기존 host key 자동 삭제 및 ssh-keyscan 등록
-2. Ansible 인벤토리
-   - 문제: 호스트 목록과 각 노드 변수 필요
-   - 해결: `dynamic_inventory.py` 사용 → Terraform output 기반 동적 인벤토리 제공
-3. Docker Swarm 초기화
-   - Manager/Worker 조인 자동화
-   - 환경 변수와 SSH config를 통해 Ansible이 원활히 접근 가능
-
----
-
-## 6. 테스트 및 검증
-- Nginx 서비스 3개 복제본 배포
-- `docker service ps nginx_web` 명령으로 Manager 및 Worker에 컨테이너 정상 배포 확인
-
----
-
-## 7. 향후 계획
-- 모니터링 스택 설치 (Prometheus, Grafana)
-- Swarm Manager HA 구성
-- CI/CD 파이프라인 연동
-
----
-
-- 💡 핵심 요약
-- `inventory_plugins/swarm.py`는 필수 → Ansible 인벤토리 역할
-- SSH 설정/초기화, host key 충돌, 핑거프린트 관련 트러블슈팅 내용 포함
-- 불필요한 중복 스크립트는 제거 가능, Makefile과 `run/common/setup_env.sh` 중심으로 환경 구성
+실습 구조 전환 후에도 위 문서를 최신 상태로 유지하면 다음 Codex 세션에서 빠르게 맥락을 복구할 수 있다.

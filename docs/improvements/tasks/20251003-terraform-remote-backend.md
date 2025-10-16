@@ -1,7 +1,7 @@
 # Terraform 원격 백엔드 전환 가이드
 
 ## 배경
-- 현재 `src/iac/terraform/terraform.tfstate` 및 `terraform.tfvars`가 로컬에 남아 있어 협업과 보안 측면에서 위험.
+- 현재 `labs/01-lab-docker-swarm/src/terraform/terraform.tfstate` 및 `terraform.tfvars`가 로컬에 남아 있어 협업과 보안 측면에서 위험.
 - `docs/REAL_WORLD_STRUCTURE.md`에서 권장하는 S3/DynamoDB 기반 원격 상태 저장이 미적용 상태.
 
 ## 목표
@@ -14,7 +14,7 @@
    - S3 버킷, DynamoDB 테이블을 Terraform 외부(별도 계정/콘솔)에서 생성하거나 Bootstrap Terraform으로 구성.
    - 버킷 정책과 SSE-KMS 적용 검토.
 2. **backend.tf 수정**
-   - `src/iac/terraform/envs/<env>/backend.tf`에서 `backend "s3" {}` 블록으로 전환.
+   - `labs/01-lab-docker-swarm/src/terraform/envs/<env>/backend.tf`에서 `backend "s3" {}` 블록으로 전환.
    - `bucket`, `key`, `dynamodb_table`, `region`, `profile`(필요 시) 정의.
 3. **변수 정리**
    - `terraform.tfvars` 내용을 `TFVARS_GUIDE.md`에 문서화하고, 실사용 값은 Parameter Store/Secrets Manager 연결 가이드로 대체.

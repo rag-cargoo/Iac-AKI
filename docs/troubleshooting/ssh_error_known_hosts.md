@@ -15,7 +15,7 @@
 ## 해결 절차
 
 ### 1. 자동 등록 스크립트 재실행 (권장)
-`run/common/setup_env.sh`는 Terraform 출력에 포함된 Bastion/Manager/Worker 주소를 사용해 `ssh-keyscan`으로 최신 호스트 키를 가져옵니다. 다음 명령으로 환경을 새로 준비하면 대부분의 문제가 해결됩니다.
+`labs/01-lab-docker-swarm/src/run/common/setup_env.sh`는 Terraform 출력에 포함된 Bastion/Manager/Worker 주소를 사용해 `ssh-keyscan`으로 최신 호스트 키를 가져옵니다. 다음 명령으로 환경을 새로 준비하면 대부분의 문제가 해결됩니다.
 
 ```bash
 make setup_env             # 또는 make run, make setup_env_refresh
@@ -47,7 +47,7 @@ host_key_checking = False
 만약 별도 환경에서 이 설정이 빠졌다면 위 옵션을 다시 활성화하거나, 앞선 자동 등록 스크립트를 사용하세요.
 
 ### 4. Docker CLI 전용 체크 포인트
-- `run/common/setup_env.sh`가 SSH config에 추가한 옵션 덕분에 Docker CLI는 별도 프롬프트 없이 새 노드에 접속합니다.
+- `labs/01-lab-docker-swarm/src/run/common/setup_env.sh`가 SSH config에 추가한 옵션 덕분에 Docker CLI는 별도 프롬프트 없이 새 노드에 접속합니다.
 - 만약 수동으로 Docker 컨텍스트를 만든 경우 아래 항목이 포함돼 있는지 확인하세요.
 
 ```
@@ -65,4 +65,4 @@ Host swarm-manager
 
 ## 참고
 - 인프라를 재프로비저닝할 때마다 `make setup_env` 또는 `make run`을 다시 실행하면 자동으로 최신 상태를 유지할 수 있습니다.
-- 관련 자동화 흐름은 `run/common/setup_env.sh`의 Step 1.5(known_hosts 갱신)와 Step 2(SSH config 적용)에서 수행됩니다.
+- 관련 자동화 흐름은 `labs/01-lab-docker-swarm/src/run/common/setup_env.sh`의 Step 1.5(known_hosts 갱신)와 Step 2(SSH config 적용)에서 수행됩니다.

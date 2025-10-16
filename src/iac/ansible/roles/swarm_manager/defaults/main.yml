@@ -1,2 +1,0 @@
----
-swarm_manager_advertise_addr: "{{ ansible_host }}"

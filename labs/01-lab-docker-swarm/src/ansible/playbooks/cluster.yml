@@ -1,0 +1,37 @@
+---
+- name: Prepare Docker runtime on all swarm nodes
+  hosts: swarm_nodes
+  become: true
+  vars:
+    docker_engine_apt_packages:
+      - apt-transport-https
+      - ca-certificates
+      - curl
+      - gnupg
+      - lsb-release
+    docker_engine_repository:
+      repo: "deb [arch=amd64] https://download.docker.com/linux/ubuntu {{ ansible_lsb.codename }} stable"
+    docker_engine_python_packages:
+      - docker
+    docker_engine_user: ubuntu
+  tasks:
+    - name: Install Docker Engine and prerequisites
+      ansible.builtin.import_tasks: ../tasks/docker_engine.yml
+
+- name: Initialize Swarm manager and publish join token
+  hosts: swarm_manager
+  become: true
+  vars:
+    swarm_manager_advertise_addr: "{{ ansible_host }}"
+  tasks:
+    - name: Initialize swarm manager
+      ansible.builtin.import_tasks: ../tasks/swarm_manager.yml
+
+- name: Join worker nodes to the Swarm
+  hosts: swarm_worker
+  become: true
+  vars:
+    swarm_manager_rpc_port: 2377
+  tasks:
+    - name: Join worker nodes
+      ansible.builtin.import_tasks: ../tasks/swarm_worker.yml

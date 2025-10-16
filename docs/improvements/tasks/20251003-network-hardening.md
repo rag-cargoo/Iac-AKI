@@ -1,7 +1,7 @@
 # 네트워크 및 보안 그룹 강화 과제
 
 ## 배경
-- `src/iac/terraform/modules/security/main.tf`가 HTTP(80)과 내부 관리 포트를 광범위하게 허용하고 있어 실서비스 수준의 보호가 부족.
+- `labs/01-lab-docker-swarm/src/terraform/modules/security/main.tf`가 HTTP(80)과 내부 관리 포트를 광범위하게 허용하고 있어 실서비스 수준의 보호가 부족.
 - 관측/로그 흐름(Customer 접속, 운영자 접근)에 대한 문서화와 모니터링 설정이 부재.
 
 ## 목표

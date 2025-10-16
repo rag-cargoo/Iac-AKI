@@ -13,7 +13,7 @@ Ansible 실행 시 dynamic_inventory.py가 작동하지 않고 환경 변수 미
 
 ```text
 Error: Missing required environment variables: BASTION_PUBLIC_IP, MANAGER_PRIVATE_IP, SSH_KEY_PATH
-Please source run/common/setup_env.sh first.
+Please source labs/01-lab-docker-swarm/src/run/common/setup_env.sh first.
 ```
 
 **원인:**
@@ -21,9 +21,10 @@ Please source run/common/setup_env.sh first.
 *   Ansible이 dynamic_inventory.py를 호출할 때 환경 변수를 찾지 못함.
 
 **해결 방법:**
-*   반드시 프로젝트 환경 설정 스크립트를 먼저 실행:
+*   반드시 실습 디렉터리에서 환경 설정 스크립트를 먼저 실행:
     ```bash
-    source run/common/setup_env.sh
+    cd labs/01-lab-docker-swarm
+    source src/run/common/setup_env.sh
     ```
 *   Makefile을 만들어 환경 설정 + Ansible 플레이북 실행을 한 번에 수행:
     ```makefile
@@ -125,7 +126,7 @@ ansible:
 
 | 문제 원인             | 해결 방법                                    | 상태 |
 | :-------------------- | :------------------------------------------- | :--- |
-| Dynamic Inventory 실행 실패 | `run/common/setup_env.sh` 먼저 실행, Makefile 사용 | 해결 |
+| Dynamic Inventory 실행 실패 | `labs/01-lab-docker-swarm/src/run/common/setup_env.sh` 먼저 실행, Makefile 사용 | 해결 |
 | 워커 노드 Swarm 조인 실패 | 플레이북 수정 및 환경 변수 정상화            | 해결 |
 | Python 인터프리터 경고    | 무시 가능, 필요 시 `ansible_python_interpreter` 지정 | 경고만 |
 | SSH 연결 실패           | Bastion 설정, `ssh-agent` 키 추가            | 해결 |

@@ -19,3 +19,4 @@ terraform.tfvars
 *.log
 *.tmp
 run/common/.setup_env_cache
+labs/01-lab-docker-swarm/src/run/common/.setup_env_cache

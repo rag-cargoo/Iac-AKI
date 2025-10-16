@@ -1,0 +1,27 @@
+---
+- name: Install and enable strongSwan on the local gateway
+  hosts: localhost
+  connection: local
+  become: true
+  vars:
+    strongswan_packages:
+      - strongswan
+      - strongswan-pki
+      - charon-systemd
+  tasks:
+    - name: Ensure apt cache is up to date
+      ansible.builtin.apt:
+        update_cache: true
+      when: ansible_facts['pkg_mgr'] == 'apt'
+
+    - name: Install strongSwan packages
+      ansible.builtin.package:
+        name: "{{ strongswan_packages }}"
+        state: present
+
+    - name: Ensure strongSwan service is enabled and started
+      ansible.builtin.service:
+        name: strongswan-starter
+        state: started
+        enabled: true
+      ignore_errors: true  # service name differs on some distros

@@ -1,29 +1,32 @@
 # Production-Ready Project Structure
 
 ## Overview
-이 문서는 AWS 기반 Docker Swarm 자동화 프로젝트를 실무 환경에 맞게 구성하기 위한 표준 구조와 워크플로우를 설명합니다. 모든 변경 사항은 `refactor-env-automation` 브랜치에서 진행되며, Terraform과 Ansible 레이어를 명확히 분리하고 스크립트 및 문서를 체계화합니다.
+이 문서는 실습 기반 저장소를 실무 환경으로 확장할 때 고려해야 할 구조와 워크플로우를 설명합니다. 현재 리포는 `labs/<lab-id>/` 아래에 실습을 격리하지만, 동일한 규칙을 적용해 프로덕션 저장소를 구성할 수 있습니다.
 
 ## Terraform Layout
-- `src/iac/terraform/modules/`에 보안, 컴퓨트 등 사내 모듈을 두고, 네트워크는 `terraform-aws-modules/vpc/aws`를 사용합니다.
-- `src/iac/terraform/envs/<environment>/`는 환경별 진입점을 제공하며, `backend.tf`로 원격 상태 저장 위치를 선언하고 `terraform.tfvars`에 환경 값을 정의합니다. 스크립트 실행 시 `TERRAFORM_ENVIRONMENT` 변수를 설정하면 특정 환경 디렉터리를 선택할 수 있습니다.
-- 모든 모듈은 `variables.tf`와 `outputs.tf`를 포함해 인터페이스를 명시하며, `README.md`에 사용법을 정리합니다.
+- 실습에서는 `labs/<lab-id>/src/terraform/`에 모듈(`modules/`)과 환경별 진입점(`envs/<environment>/`)을 배치합니다.
+- 실무에서는 동일 구조를 유지하되 원격 상태 백엔드(S3 + DynamoDB 등)와 `terraform.tfvars` 템플릿을 별도 리포 또는 Parameter Store로 분리합니다.
+- 모든 모듈은 `variables.tf`, `outputs.tf`, `README.md`를 포함해 인터페이스를 명확히 합니다.
 
 ## Ansible Layout
-- `src/iac/ansible/roles/` 디렉터리에 역할별 디렉터리를 생성하고 `tasks/`, `defaults/`, `handlers/`, `tests/` 구조를 유지합니다.
-- 동적 인벤토리는 `src/iac/ansible/inventory_plugins/swarm.py` 스크립트가 담당하며, `ansible.cfg`에서 직접 참조합니다.
-- 주요 플레이북은 `src/iac/ansible/playbooks/`에 두고 `cluster.yml`, `bootstrap.yml`, `verify.yml` 등 목적에 따라 분리합니다.
+- 학습용 실습은 `playbooks/` + `tasks/` 조합으로 단순화했지만, 실무에서는 역할(`roles/`)과 핸들러, 템플릿을 활용한 계층형 구조가 유리합니다.
+- 동적 인벤토리 스크립트는 `labs/<lab-id>/src/ansible/inventory_plugins/`에 두고, 프로덕션에서는 별도 패키지로 재사용하거나 Parameter Store/Service Discovery와 연계합니다.
+- 주요 플레이북은 `playbooks/cluster.yml`, `bootstrap.yml`, `verify.yml`처럼 목적별로 유지합니다.
 
 ## Scripts & Tooling
-- 실행 스크립트와 진단 도구는 `run/common/` 또는 서비스별 `run/<service>/` 아래에 배치합니다.
-- `Makefile`은 빌드/테스트/배포 명령을 래핑하고, CI 파이프라인은 동일한 목표를 호출해 일관성을 유지합니다.
-- Terraform, Ansible 각각에 대해 `pre-commit` 훅과 Lint를 구성해 기본 검증을 자동화합니다.
+- 실습의 `src/run/` 구조를 그대로 확장해, 공통 스크립트는 `common/`, 서비스별 절차는 `monitoring/`, `logging/` 등으로 분리합니다.
+- 루트 `Makefile`은 각 실습 `Makefile`을 프록시하지만, 프로덕션에서는 `make terraform-plan`, `make ansible-deploy`처럼 공통 명령을 루트에 직접 정의할 수 있습니다.
+- Terraform/Ansible 모두 `pre-commit`, `terraform fmt`, `ansible-lint` 등을 활용해 기본 검증을 자동화합니다.
 
 ## CI/CD & Testing
-- 파이프라인 단계: Terraform `plan` → 승인 → `apply` → Ansible 배포 → Docker Swarm 상태 점검(`docker service ls`).
-- Ansible 역할 단위 테스트는 `molecule` 또는 `ansible-lint`로 실행하며, Terraform은 `terraform validate`와 `terratest`(선택)를 적용합니다.
+- 파이프라인 단계 예시: Terraform `plan` → 수동 승인 → `apply` → Ansible 배포 → Docker Swarm 상태 점검(`docker service ls`, `docker service ps`).
+- Ansible 플레이북 및 태스크는 `ansible-lint`, `molecule`로 검증하고, Terraform은 `terraform validate`, `terratest`(선택)을 적용합니다.
+- 모니터링 스택 배포는 Swarm이나 Kubernetes의 GitOps 파이프라인(Argo CD 등)으로 이관할 수 있습니다.
 
 ## Migration Checklist
-1. 기존 Terraform 상태 파일을 새 `src/iac/terraform/envs/<environment>` 디렉터리로 이동하고 `backend.tf`를 설정합니다.
-2. `run/common/setup_env.sh`를 통해 환경 변수를 갱신한 뒤 `src/iac/ansible/ansible.cfg`가 올바른 플러그인을 참조하는지 확인합니다.
-3. 새 플레이북(`playbooks/cluster.yml`)으로 Swarm을 재배포하고, 테스트 플레이북을 `roles/<role>/tests/`로 이동합니다.
-4. CI/CD 설정을 업데이트해 새로운 디렉터리와 명령 경로를 사용하도록 합니다.
+1. 실습에서 사용한 로컬 tfstate를 원격 백엔드로 이전하고, 상태 잠금/버전 관리를 활성화합니다.
+2. `labs/<lab-id>/src/run/common/setup_env.sh`와 같은 스크립트를 조직 표준에 맞춰 리팩터링하거나 중앙 관리 스크립트로 통합합니다.
+3. Ansible 구조를 역할 기반으로 확장하고, 공통 역할은 별도 패키지/레포로 분리합니다.
+4. CI/CD 파이프라인을 업데이트해 새로운 디렉터리와 명령 경로를 사용하도록 합니다.
+
+실습 구조를 기반으로 하되, 실무 요구사항(권한 분리, 상태 관리, CI, 보안 정책)에 맞춰 단계적으로 확장하는 것을 권장합니다.

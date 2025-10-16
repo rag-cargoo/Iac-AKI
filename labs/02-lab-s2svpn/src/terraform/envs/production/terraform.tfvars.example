@@ -1,0 +1,30 @@
+# AWS region
+aws_region = "ap-northeast-2"
+
+# Resource tagging prefix
+project_name = "home-lab-s2s"
+
+# Existing VPC to attach the VPN gateway to
+vpc_id = "vpc-0123456789abcdef0"
+
+# Your on-premises router public IP (must be static)
+customer_gateway_ip = "203.0.113.10"
+
+# ASN values (modify if you already use a specific ASN on either side)
+customer_gateway_bgp_asn = 65010
+amazon_side_asn          = 64512
+
+# Private networks behind your on-prem router that should be reachable from AWS
+remote_ipv4_cidrs = [
+  "192.168.0.0/24",
+  "192.168.1.0/24",
+]
+
+# Route tables that should receive VPN route propagation (optional)
+# route_table_ids = [
+#   "rtb-0123456789abcdef0",
+# ]
+
+# Optional: provide preshared keys if you do not want AWS to randomize them
+# tunnel1_preshared_key = "MY-STRONG-SECRET-KEY-1"
+# tunnel2_preshared_key = "MY-STRONG-SECRET-KEY-2"

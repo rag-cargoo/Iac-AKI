@@ -2,7 +2,7 @@
 
 ## 배경
 - 현재 스크립트는 `StrictHostKeyChecking=no`, `UserKnownHostsFile=/dev/null` 설정에 의존해 자동화 편의성을 확보했지만 보안 정책에 부합하지 않음.
-- `run/common/setup_env.sh`가 사설 IP를 직접 `ssh-keyscan`하여 bastion을 거치지 않으며, bastion 기반 스캔 요구사항이 미이행 상태.
+- `labs/01-lab-docker-swarm/src/run/common/setup_env.sh`가 사설 IP를 직접 `ssh-keyscan`하여 bastion을 거치지 않으며, bastion 기반 스캔 요구사항이 미이행 상태.
 
 ## 목표
 1. bastion을 통해 호스트 키를 수집/검증하는 안전한 플로우로 전환.
@@ -11,7 +11,7 @@
 
 ## 세부 작업
 1. **키 수집 방식 변경**
-   - `run/common/setup_env.sh`에서 `ssh-keyscan` 호출을 bastion에서 실행하도록 변경 (`ssh -J bastion-host ssh-keyscan ...`).
+   - `labs/01-lab-docker-swarm/src/run/common/setup_env.sh`에서 `ssh-keyscan` 호출을 bastion에서 실행하도록 변경 (`ssh -J bastion-host ssh-keyscan ...`).
    - 로컬 known_hosts 파일을 관리하되 이전 키 제거 로직을 유지.
 2. **SSH 설정 재구성**
    - SSH config 블록에서 `StrictHostKeyChecking no`를 제거하거나 선택적으로 토글할 수 있는 환경 변수 도입.
