@@ -69,3 +69,13 @@ module "load_balancer" {
   route53_record_names      = var.route53_record_names
   health_check_path         = "/login"
 }
+
+output "jenkins_alb_dns" {
+  description = "Public DNS name of the Jenkins ALB."
+  value       = module.load_balancer.alb_dns_name
+}
+
+output "jenkins_route53_records" {
+  description = "Route53 alias records pointing to the Jenkins ALB."
+  value       = module.load_balancer.route53_record_fqdns
+}
