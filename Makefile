@@ -32,6 +32,9 @@ help:
 	@echo "  make $(LAB01_PREFIX)-monitoring_remove # Remove monitoring stack"
 	@echo "  make $(LAB01_PREFIX)-jenkins_deploy    # Deploy Jenkins stack"
 	@echo "  make $(LAB01_PREFIX)-jenkins_remove    # Remove Jenkins stack"
+	@echo "  make $(LAB01_PREFIX)-jenkins_password  # Print Jenkins initial admin password"
+	@echo "  make $(LAB01_PREFIX)-jenkins_deploy    # Deploy Jenkins stack"
+	@echo "  make $(LAB01_PREFIX)-jenkins_remove    # Remove Jenkins stack"
 	@echo "  make $(LAB02_PREFIX)-init             # Terraform init (one-time)"
 	@echo "  make $(LAB02_PREFIX)-tf-plan          # Terraform plan"
 	@echo "  make $(LAB02_PREFIX)-tf-apply         # Terraform apply"
@@ -71,6 +74,9 @@ $(LAB01_PREFIX)-jenkins_deploy:
 
 $(LAB01_PREFIX)-jenkins_remove:
 	@$(MAKE) -C $(LAB01_DIR) jenkins_remove
+
+$(LAB01_PREFIX)-jenkins_password:
+	@$(MAKE) -C $(LAB01_DIR) jenkins_password
 
 # pattern fallback for any new sub-targets
 $(LAB01_PREFIX)-%:

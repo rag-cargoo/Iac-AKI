@@ -16,7 +16,7 @@ ANSIBLE_FORKS ?=
 .PHONY: run setup_env setup_env_refresh ansible clean tunnel \
         tf-init tf-plan tf-apply tf-destroy \
         monitoring_deploy monitoring_remove \
-        jenkins_deploy jenkins_remove \
+        jenkins_deploy jenkins_remove jenkins_password \
         diagnose workflow destroy
 
 run:
@@ -86,6 +86,13 @@ jenkins_remove:
 	@echo "🔹 Removing Jenkins stack..."
 	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 	@docker stack rm jenkins
+
+jenkins_password:
+	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+	@echo "🔹 Fetching Jenkins initial admin password..."
+	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+	@docker ps --filter name=jenkins_jenkins --format '{{.ID}}' | head -n1 | \
+		xargs -I{} docker exec {} cat /var/jenkins_home/secrets/initialAdminPassword
 
 destroy:
 	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
