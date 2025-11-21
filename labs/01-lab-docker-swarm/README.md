@@ -51,6 +51,7 @@ make tf-destroy
 - `src/run/common/setup_env.sh` – SSH config, known_hosts, Docker 컨텍스트 자동화
 - `src/run/common/connect_service_tunnel.sh` – 서비스 PublishedPort 기반 터널링 도우미
 - `src/run/monitoring/README.md` – Prometheus + Grafana 배포 절차
+- `src/run/stacks/ci_cd/jenkins/README.md` – Jenkins 스택 배포 및 운영 안내
 - `src/run/stacks/` – Docker stack 정의 및 샘플 대시보드 저장소
 
 필요한 인사이트나 시행착오를 `docs/` 하위에 기록해 두면 다음 세션에서 빠르게 맥락을 복구할 수 있습니다.

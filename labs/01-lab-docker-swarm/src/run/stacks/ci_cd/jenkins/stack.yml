@@ -1,0 +1,39 @@
+version: '3.8'
+services:
+  jenkins:
+    image: jenkins/jenkins:lts-jdk17
+    user: root
+    environment:
+      JENKINS_OPTS: "--prefix=/"
+    ports:
+      - target: 8080
+        published: 8080
+        protocol: tcp
+        mode: host
+      - target: 50000
+        published: 50000
+        protocol: tcp
+        mode: host
+    volumes:
+      - jenkins-data:/var/jenkins_home
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - jenkins_net
+    deploy:
+      placement:
+        constraints:
+          - node.role == manager
+      restart_policy:
+        condition: on-failure
+      resources:
+        reservations:
+          memory: 512M
+        limits:
+          memory: 2G
+
+volumes:
+  jenkins-data:
+
+networks:
+  jenkins_net:
+    driver: overlay

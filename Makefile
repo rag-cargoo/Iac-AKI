@@ -16,6 +16,7 @@ ANSIBLE_FLAGS ?= -K
         $(LAB01_PREFIX)-tf-plan $(LAB01_PREFIX)-tf-apply \
         $(LAB01_PREFIX)-setup_env $(LAB01_PREFIX)-tunnel \
         $(LAB01_PREFIX)-monitoring_deploy $(LAB01_PREFIX)-monitoring_remove \
+        $(LAB01_PREFIX)-jenkins_deploy $(LAB01_PREFIX)-jenkins_remove \
         $(LAB02_PREFIX)-init $(LAB02_PREFIX)-tf-plan $(LAB02_PREFIX)-tf-apply $(LAB02_PREFIX)-tf-output $(LAB02_PREFIX)-tf-destroy $(LAB02_PREFIX)-strongswan
 
 help:
@@ -29,6 +30,8 @@ help:
 	@echo "  make $(LAB01_PREFIX)-tunnel           # Open service tunnels"
 	@echo "  make $(LAB01_PREFIX)-monitoring_deploy # Deploy monitoring stack"
 	@echo "  make $(LAB01_PREFIX)-monitoring_remove # Remove monitoring stack"
+	@echo "  make $(LAB01_PREFIX)-jenkins_deploy    # Deploy Jenkins stack"
+	@echo "  make $(LAB01_PREFIX)-jenkins_remove    # Remove Jenkins stack"
 	@echo "  make $(LAB02_PREFIX)-init             # Terraform init (one-time)"
 	@echo "  make $(LAB02_PREFIX)-tf-plan          # Terraform plan"
 	@echo "  make $(LAB02_PREFIX)-tf-apply         # Terraform apply"
@@ -62,6 +65,12 @@ $(LAB01_PREFIX)-monitoring_deploy:
 
 $(LAB01_PREFIX)-monitoring_remove:
 	@$(MAKE) -C $(LAB01_DIR) monitoring_remove
+
+$(LAB01_PREFIX)-jenkins_deploy:
+	@$(MAKE) -C $(LAB01_DIR) jenkins_deploy
+
+$(LAB01_PREFIX)-jenkins_remove:
+	@$(MAKE) -C $(LAB01_DIR) jenkins_remove
 
 # pattern fallback for any new sub-targets
 $(LAB01_PREFIX)-%:

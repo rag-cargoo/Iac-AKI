@@ -15,8 +15,9 @@ ANSIBLE_FORKS ?=
 
 .PHONY: run setup_env setup_env_refresh ansible clean tunnel \
         tf-init tf-plan tf-apply tf-destroy \
-        monitoring_deploy monitoring_remove diagnose \
-        workflow destroy
+        monitoring_deploy monitoring_remove \
+        jenkins_deploy jenkins_remove \
+        diagnose workflow destroy
 
 run:
 	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
@@ -73,6 +74,18 @@ monitoring_remove:
 	@echo "🔹 Removing monitoring stack..."
 	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 	@docker stack rm monitoring
+
+jenkins_deploy:
+	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+	@echo "🔹 Deploying Jenkins stack (CI/CD)..."
+	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+	@docker stack deploy -c $(LAB_ROOT)/src/run/stacks/ci_cd/jenkins/stack.yml jenkins
+
+jenkins_remove:
+	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+	@echo "🔹 Removing Jenkins stack..."
+	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+	@docker stack rm jenkins
 
 destroy:
 	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
