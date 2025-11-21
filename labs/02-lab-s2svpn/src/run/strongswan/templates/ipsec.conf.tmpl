@@ -1,0 +1,27 @@
+config setup
+  charondebug="ike 1, knl 1, cfg 2"
+  uniqueids=no
+
+conn aws-tunnel-1
+  auto=start
+  type=tunnel
+  keyexchange=ikev1
+  authby=psk
+  left=%defaultroute
+  leftid=@__CUSTOMER_GATEWAY_IP__
+  leftsubnet=__ONPREM_CIDR__
+  right=__TUNNEL1_OUTSIDE_ADDRESS__
+  rightid=__TUNNEL1_OUTSIDE_ADDRESS__
+  rightsubnet=__AWS_VPC_CIDR__
+  ike=__IKE_SUITE__
+  esp=__ESP_SUITE__
+  ikelifetime=28800s
+  lifetime=3600s
+  dpddelay=10s
+  dpdtimeout=30s
+  dpdaction=restart
+
+conn aws-tunnel-2
+  also=aws-tunnel-1
+  right=__TUNNEL2_OUTSIDE_ADDRESS__
+  rightid=__TUNNEL2_OUTSIDE_ADDRESS__

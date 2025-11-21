@@ -8,6 +8,8 @@ LAB01_DIR := labs/$(LAB01_PREFIX)
 LAB02_PREFIX := 02-lab-s2svpn
 LAB02_DIR := labs/$(LAB02_PREFIX)
 
+ANSIBLE_FLAGS ?= -K
+
 .PHONY: help \
         $(LAB01_PREFIX)-% $(LAB02_PREFIX)-% \
         $(LAB01_PREFIX)-init $(LAB01_PREFIX)-run $(LAB01_PREFIX)-tf-destroy \
@@ -81,7 +83,7 @@ $(LAB02_PREFIX)-tf-destroy:
 	@$(MAKE) -C $(LAB02_DIR) tf-destroy
 
 $(LAB02_PREFIX)-strongswan:
-	@ANSIBLE_STDOUT_CALLBACK= yaml ansible-playbook labs/$(LAB02_PREFIX)/src/ansible/install_strongswan.yml $(ANSIBLE_FLAGS)
+	@ANSIBLE_STDOUT_CALLBACK=yaml ansible-playbook labs/$(LAB02_PREFIX)/src/ansible/install_strongswan.yml $(ANSIBLE_FLAGS)
 
 $(LAB02_PREFIX)-%:
 	@$(MAKE) -C $(LAB02_DIR) $*

@@ -67,10 +67,20 @@ make tf-destroy
 로컬 strongSwan 게이트웨이를 자동으로 설치하려면 루트에서 다음 명령을 사용할 수 있습니다.
 
 ```bash
-make 02-lab-s2svpn-strongswan ANSIBLE_FLAGS=-K
+make 02-lab-s2svpn-strongswan
 ```
 
-필요 시 `ANSIBLE_FLAGS`에 추가 옵션을 전달하세요.
+기본으로 sudo 비밀번호를 요청하며, 비밀번호가 필요 없으면 `make 02-lab-s2svpn-strongswan ANSIBLE_FLAGS=`처럼 덮어쓸 수 있습니다.
+실행 전에 `sudo sysctl net.ipv4.ip_forward` 값이 `1`인지 확인하고, `0`이면 아래처럼 활성화·영구 적용해 두세요.
+```bash
+sudo sysctl -w net.ipv4.ip_forward=1
+echo "net.ipv4.ip_forward = 1" | sudo tee /etc/sysctl.d/99-strongswan.conf >/dev/null
+sudo sysctl --system
+```
+설치 후에는 `sudo systemctl status strongswan-starter`, `sudo ipsec statusall`로 서비스가 `active (running)`인지 확인하세요.
+다운로드한 AWS 구성 파일은 `labs/02-lab-s2svpn/src/run/strongswan/download/`에 복사한 뒤 `make 02-lab-s2svpn-strongswan-generate-local`을 실행하면 `src/run/strongswan/templates/*.local`로 민감 값이 분리 저장됩니다. 결과만 미리 보고 싶으면 `CLONE_ONLY=true`를 붙여 사용하세요.
+검토 후 `/etc`에 반영하려면 `make 02-lab-s2svpn-strongswan-install-local`을 실행하세요. 명령 안에서 자동으로 sudo를 요청하고, 기존 파일을 `.bak`으로 백업한 뒤 `# BEGIN/END aws-s2s-managed` 구간만 교체합니다.
+상태 확인은 `make 02-lab-s2svpn-strongswan-verify`로 strongSwan을 재시작하고 `ipsec statusall` 결과를 확인하면 됩니다.
 
 ---
 

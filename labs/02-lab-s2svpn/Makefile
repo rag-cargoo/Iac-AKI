@@ -4,7 +4,11 @@ TF_ENV_DIR ?= $(CURDIR)/src/terraform/envs/production
 
 .DEFAULT_GOAL := tf-plan
 
-.PHONY: tf-init tf-plan tf-apply tf-destroy tf-output
+.PHONY: tf-init tf-plan tf-apply tf-destroy tf-output \
+        strongswan-generate-local strongswan-install-local strongswan-verify
+
+RUN_DIR := $(CURDIR)/src/run
+STRONGSWAN_DIR := $(RUN_DIR)/strongswan
 
 tf-init:
 	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
@@ -32,3 +36,12 @@ tf-destroy:
 
 tf-output:
 	@terraform -chdir=$(TF_ENV_DIR) output
+
+strongswan-generate-local:
+	@$(STRONGSWAN_DIR)/1-generate-local.sh $(OUTPUT_DIR)
+
+strongswan-install-local:
+	@$(STRONGSWAN_DIR)/2-install-local.sh
+
+strongswan-verify:
+	@$(STRONGSWAN_DIR)/3-verify.sh

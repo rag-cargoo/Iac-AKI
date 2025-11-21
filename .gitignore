@@ -20,3 +20,5 @@ terraform.tfvars
 *.tmp
 run/common/.setup_env_cache
 labs/01-lab-docker-swarm/src/run/common/.setup_env_cache
+labs/02-lab-s2svpn/src/run/strongswan/templates/ipsec.conf.local
+labs/02-lab-s2svpn/src/run/strongswan/templates/ipsec.secrets.local

@@ -26,7 +26,9 @@
     /etc/ipsec.secrets`)에 새 로컬 IP 적용.
    - Windows/WSL 방화벽(필요 시) 조정
 3. **strongSwan**
-   - 설치: `make 02-lab-s2svpn-strongswan ANSIBLE_FLAGS=-K`
+   - `sudo sysctl net.ipv4.ip_forward`로 IP forwarding 상태 확인 → `0`이면 `sudo sysctl -w net.ipv4.ip_forward=1` 후 `echo "net.ipv4.ip_forward = 1" | sudo tee /etc/sysctl.d/99-strongswan.conf >/dev/null` 및 `sudo sysctl --system`
+   - 설치: `make 02-lab-s2svpn-strongswan`
+   - `sudo systemctl status strongswan-starter`, `sudo ipsec statusall`로 서비스 상태 확인
    - 설정 파일을 AWS 구성파일에 맞게 채우고 `ipsec restart`
 4. **Terraform 재생성**
    ```bash
@@ -59,4 +61,3 @@
   - 관리자 PowerShell에서 `wsl --update --pre-release`로 업데이트 가능.
   - 또는 Microsoft Store → "Windows Subsystem for Linux" 앱을 직접 업데이트.
 - 업데이트 후 `wsl --shutdown` → `wsl --networking-mode bridged` 명령을 다시 실행해 브리지 모드를 활성화할 것.
-
