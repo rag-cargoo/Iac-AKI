@@ -38,16 +38,6 @@ resource "aws_security_group" "alb" {
   }
 }
 
-resource "aws_security_group_rule" "allow_jenkins_from_alb" {
-  description              = "Allow ALB to reach Jenkins on managers"
-  type                     = "ingress"
-  from_port                = var.target_port
-  to_port                  = var.target_port
-  protocol                 = "tcp"
-  security_group_id        = var.manager_security_group_id
-  source_security_group_id = aws_security_group.alb.id
-}
-
 resource "aws_lb" "jenkins" {
   name               = replace(local.alb_name, "_", "-")
   internal           = false

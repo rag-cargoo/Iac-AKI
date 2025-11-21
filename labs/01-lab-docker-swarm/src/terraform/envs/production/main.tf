@@ -36,6 +36,7 @@ module "security" {
   project_name  = var.project_name
   vpc_id        = module.vpc.vpc_id
   operator_cidr = var.my_ip
+  vpc_cidr      = var.vpc_cidr
 }
 
 module "compute" {
@@ -58,16 +59,15 @@ module "compute" {
 module "load_balancer" {
   source = "../../modules/load_balancer"
 
-  project_name              = var.project_name
-  vpc_id                    = module.vpc.vpc_id
-  public_subnet_ids         = module.vpc.public_subnets
-  certificate_arn           = var.certificate_arn
-  target_port               = 8080
-  manager_instance_ids      = module.compute.manager_instance_ids
-  manager_security_group_id = module.security.security_group_id
-  route53_zone_name         = var.route53_zone_name
-  route53_record_names      = var.route53_record_names
-  health_check_path         = "/login"
+  project_name         = var.project_name
+  vpc_id               = module.vpc.vpc_id
+  public_subnet_ids    = module.vpc.public_subnets
+  certificate_arn      = var.certificate_arn
+  target_port          = 8080
+  manager_instance_ids = module.compute.manager_instance_ids
+  route53_zone_name    = var.route53_zone_name
+  route53_record_names = var.route53_record_names
+  health_check_path    = "/login"
 }
 
 output "jenkins_alb_dns" {

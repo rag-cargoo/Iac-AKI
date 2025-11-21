@@ -29,11 +29,6 @@ variable "manager_instance_ids" {
   type        = list(string)
 }
 
-variable "manager_security_group_id" {
-  description = "Security group ID applied to Swarm manager instances."
-  type        = string
-}
-
 variable "route53_zone_name" {
   description = "Route53 hosted zone name (e.g., example.com)."
   type        = string

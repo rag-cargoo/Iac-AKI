@@ -12,3 +12,8 @@ variable "operator_cidr" {
   description = "CIDR block allowed to SSH into the bastion host."
   type        = string
 }
+
+variable "vpc_cidr" {
+  description = "CIDR block for the VPC; used to scope internal access rules."
+  type        = string
+}

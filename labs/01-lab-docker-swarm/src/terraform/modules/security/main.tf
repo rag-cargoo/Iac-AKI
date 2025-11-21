@@ -44,6 +44,14 @@ resource "aws_security_group" "swarm" {
   }
 
   ingress {
+    description = "Allow Jenkins traffic from within the VPC"
+    from_port   = 8080
+    to_port     = 8080
+    protocol    = "tcp"
+    cidr_blocks = [var.vpc_cidr]
+  }
+
+  ingress {
     description = "Allow Node Exporter from within this security group"
     from_port   = 9100
     to_port     = 9100
