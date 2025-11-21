@@ -38,6 +38,8 @@ make tf-destroy
 - 환경 디렉터리: `src/terraform/envs/production`
 - 로컬 상태(`terraform.tfstate`)만 사용합니다. 실습 종료 후 불필요한 상태 파일을 삭제해 주세요.
 - 변수 예시는 `src/terraform/TFVARS_GUIDE.md` 참고.
+- 퍼블릭 Jenkins/Grafana 접근을 위해 ALB + Route 53 구성이 포함되었습니다. `terraform.tfvars`에 ACM 인증서 ARN(`certificate_arn`)과 Hosted Zone(`route53_zone_name`/`route53_record_names`)을 채워 넣으면 `*.goopang.me` 같은 도메인으로 HTTPS가 열립니다.
+- ALB 설정은 `src/terraform/modules/load_balancer` 모듈로 묶여 있으며, Swarm 매니저의 8080 포트(기본 Jenkins 포트)를 타깃 그룹에 자동 등록합니다.
 
 ## Ansible 참고
 - 진입점: `src/ansible/site.yml` 또는 `playbooks/cluster.yml`

@@ -35,6 +35,13 @@ managers = [
 workers = [
   { name = "worker-1", private_ip = "your_worker_private_ip", subnet_name = "your_worker_subnet_alias" }
 ]
+
+certificate_arn = "your_acm_certificate_arn" # 예: "arn:aws:acm:ap-northeast-2:123456789012:certificate/xxxx"
+route53_zone_name = "your_domain" # 예: "example.com"
+route53_record_names = [
+  "example.com",
+  "*.example.com",
+]
 ```
 
 ## `terraform.tfvars` 예시
@@ -60,6 +67,13 @@ managers = [
 workers = [
   { name = "worker-1", private_ip = "10.0.102.10", subnet_name = "private-b" },
   { name = "worker-2", private_ip = "10.0.101.11", subnet_name = "private-a" }
+]
+
+certificate_arn = "arn:aws:acm:ap-northeast-2:123456789012:certificate/xxxx"
+route53_zone_name = "example.com"
+route53_record_names = [
+  "example.com",
+  "*.example.com",
 ]
 ```
 

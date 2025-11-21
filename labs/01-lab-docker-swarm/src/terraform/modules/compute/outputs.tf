@@ -8,6 +8,11 @@ output "manager_private_ips" {
   value       = [for manager in aws_instance.manager : manager.private_ip]
 }
 
+output "manager_instance_ids" {
+  description = "Instance IDs of the Swarm managers."
+  value       = [for manager in aws_instance.manager : manager.id]
+}
+
 output "worker_private_ips" {
   description = "Private IP addresses for Swarm workers."
   value       = [for worker in aws_instance.worker : worker.private_ip]

@@ -80,3 +80,18 @@ variable "workers" {
     subnet_name = string
   }))
 }
+
+variable "certificate_arn" {
+  description = "ACM certificate ARN used by the public load balancer."
+  type        = string
+}
+
+variable "route53_zone_name" {
+  description = "Route53 hosted zone name for public records (e.g., example.com)."
+  type        = string
+}
+
+variable "route53_record_names" {
+  description = "Fully-qualified domain names that should alias to the Jenkins ALB."
+  type        = list(string)
+}
