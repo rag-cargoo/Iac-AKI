@@ -17,6 +17,7 @@ ANSIBLE_FORKS ?=
         tf-init tf-plan tf-apply tf-destroy \
         monitoring_deploy monitoring_remove \
         jenkins_deploy jenkins_remove jenkins_password \
+        jenkins_backup jenkins_restore \
         diagnose workflow destroy
 
 run:
@@ -94,6 +95,30 @@ jenkins_password:
 	@docker ps --filter name=jenkins_jenkins --format '{{.ID}}' | head -n1 | \
 		xargs -I{} docker exec {} cat /var/jenkins_home/secrets/initialAdminPassword
 
+JENKINS_BACKUP_DIR ?= $(LAB_ROOT)/backups
+JENKINS_BACKUP_FILE ?= $(JENKINS_BACKUP_DIR)/jenkins-data.tar.gz
+
+jenkins_backup:
+	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+	@echo "🔹 Backing up Jenkins volume to $(JENKINS_BACKUP_FILE)..."
+	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+	@mkdir -p $(JENKINS_BACKUP_DIR)
+	@docker run --rm -v jenkins-data:/data -v $(JENKINS_BACKUP_DIR):/backup alpine \
+		sh -c 'tar czf /backup/jenkins-data.tar.gz -C /data .'
+	@echo "✅ Backup complete"
+
+jenkins_restore:
+	@if [ ! -f "$(JENKINS_BACKUP_FILE)" ]; then \
+		echo "ℹ️  No Jenkins backup found at $(JENKINS_BACKUP_FILE); skipping restore"; \
+		exit 0; \
+	fi
+	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+	@echo "🔹 Restoring Jenkins volume from $(JENKINS_BACKUP_FILE)..."
+	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+	@docker run --rm -v jenkins-data:/data -v $(JENKINS_BACKUP_DIR):/backup alpine \
+		sh -c 'rm -rf /data/* && tar xzf /backup/jenkins-data.tar.gz -C /data'
+	@echo "✅ Restore complete"
+
 destroy:
 	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 	@echo "🔹 Terraform destroy"
@@ -122,10 +147,13 @@ tf-apply:
 	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 	@echo "🔹 Terraform apply ($(TF_ENV_DIR))"
 	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+	@$(MAKE) jenkins_restore
 	@terraform -chdir=$(TF_ENV_DIR) apply
+	@$(MAKE) jenkins_restore
 
 tf-destroy:
 	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 	@echo "🔹 Terraform destroy ($(TF_ENV_DIR))"
 	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+	@$(MAKE) jenkins_backup
 	@terraform -chdir=$(TF_ENV_DIR) destroy
